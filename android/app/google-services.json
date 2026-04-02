@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "494072371859",
+    "project_id": "sa-management-system",
+    "storage_bucket": "sa-management-system.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:494072371859:android:9c5cfb4d71422caf060b66",
+        "android_client_info": {
+          "package_name": "com.samanagementsystem.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-JRJ8hNNTFpFfLcPqDZsHA_7jgMh7rt8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
