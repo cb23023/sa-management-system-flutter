@@ -4,7 +4,7 @@ import '../models/app_user.dart';
 import '../modules/attendance/attendance_screen.dart';
 import '../modules/co_curriculum_activity_and_credit_claim/co_curriculum_activity_and_credit_claim_screen.dart';
 import '../modules/open_registration_and_subject_registration/open_registration_and_subject_registration_screen.dart';
-import '../modules/tuition_fee_and_payment/tuition_fee_and_payment_screen.dart';
+import '../modules/tuition_fee_and_payment/tuition_fee_module.dart';
 import '../services/seed_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_bottom_nav.dart';
@@ -65,7 +65,7 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final modules = [
+    final modules = <(ModuleCardData, Widget)>[
       (
         const ModuleCardData(
           code: 'M1',
@@ -106,7 +106,7 @@ class _HomeTab extends StatelessWidget {
           enabled: true,
           icon: Icons.account_balance_wallet_rounded,
         ),
-        const TuitionFeeAndPaymentScreen(),
+        TuitionFeeModule(user: user),
       ),
       (
         const ModuleCardData(
