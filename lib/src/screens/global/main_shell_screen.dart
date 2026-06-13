@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../models/app_user.dart';
-import '../../services/seed_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/module_card.dart';
 import '../../widgets/phone_frame.dart';
-import '../attendance/attendance_module.dart';
+import '../attendance/attendance_screen.dart';
 import '../co_curriculum_activity_and_credit_claim/co_curriculum_module_page.dart';
 import '../open_registration_and_subject_registration/open_registration_and_subject_registration_screen.dart';
 import '../tuition_fee_and_payment/tuition_fee_module.dart';
+
+CoCurriculumRole? _coCurriculumRoleForUser(String role) {
+  switch (role.trim().toLowerCase()) {
+    case 'pusat_adab':
+    case 'pusat adab':
+      return CoCurriculumRole.pusatAdab;
+    case 'lecturer':
+      return CoCurriculumRole.lecturer;
+    case 'student':
+      return CoCurriculumRole.student;
+    default:
+      return null;
+  }
+}
 
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({
@@ -32,9 +47,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget build(BuildContext context) {
     final pages = [
       _HomeTab(user: widget.user),
-      const _NoticesTab(),
+      _NoticesTab(user: widget.user),
       _ProfileTab(user: widget.user),
-      _SettingsTab(onLogout: widget.onLogout),
     ];
 
     return Scaffold(
@@ -44,10 +58,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
             color: AppColors.softBackground,
             child: Column(
               children: [
-                Expanded(child: pages[_currentIndex]),
+                Expanded(child: pages[_currentIndex.clamp(0, 2)]),
                 AppBottomNav(
                   currentIndex: _currentIndex,
-                  onTap: (index) => setState(() => _currentIndex = index),
+                  onTap: (index) {
+                    if (index == 3) {
+                      widget.onLogout();
+                      return;
+                    }
+                    setState(() => _currentIndex = index);
+                  },
                 ),
               ],
             ),
@@ -65,6 +85,8 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final coCurriculumRole = _coCurriculumRoleForUser(user.role);
+
     final modules = [
       (
         const ModuleCardData(
@@ -81,18 +103,25 @@ class _HomeTab extends StatelessWidget {
         const OpenRegistrationAndSubjectRegistrationScreen(),
       ),
       (
-        const ModuleCardData(
+        ModuleCardData(
           code: 'M2',
           title: 'Co Curriculum Activity and Credit Claim',
-          subtitle:
-              'Join approved activities and submit credit claims with validated attendance records.',
+          subtitle: coCurriculumRole == null
+              ? 'Available only for Student, Lecturer, and Pusat Adab accounts.'
+              : 'Join approved activities and submit credit claims with validated attendance records.',
           status: '',
           foreground: AppColors.treasuryTeal,
           background: AppColors.tealSoft,
-          enabled: true,
+          enabled: coCurriculumRole != null,
           icon: Icons.groups_rounded,
         ),
-        const CoCurriculumActivityAndCreditClaimScreen(),
+        coCurriculumRole == null
+            ? null
+            : CoCurriculumModulePage(
+                role: coCurriculumRole,
+                userName: user.fullName,
+                userUid: user.uid,
+              ),
       ),
       (
         const ModuleCardData(
@@ -134,31 +163,28 @@ class _HomeTab extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
-                final height = constraints.maxHeight;
                 final crossAxisCount = width >= 680 ? 4 : 2;
                 const spacing = 16.0;
-                final rows = (modules.length / crossAxisCount).ceil();
-                final totalSpacing = spacing * (rows - 1);
-                final itemHeight = (height - totalSpacing).clamp(150.0, 260.0);
 
                 return GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: modules.length,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: spacing,
                     mainAxisSpacing: spacing,
-                    mainAxisExtent: itemHeight,
+                    mainAxisExtent: 220,
                   ),
                   itemBuilder: (context, index) {
                     final item = modules[index];
                     return ModuleCard(
                       data: item.$1,
-                      onTap: () {
-                        Navigator.of(
-                          context,
-                        ).push(MaterialPageRoute(builder: (_) => item.$2));
-                      },
+                      onTap: item.$2 == null
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => item.$2!),
+                              );
+                            },
                     );
                   },
                 );
@@ -172,31 +198,77 @@ class _HomeTab extends StatelessWidget {
 }
 
 class _NoticesTab extends StatelessWidget {
-  const _NoticesTab();
+  const _NoticesTab({required this.user});
+
+  final AppUser user;
 
   @override
   Widget build(BuildContext context) {
-    return const _DashboardPage(
+    return _DashboardPage(
       pageTitle: 'Notices',
       body: [
-        _NoticeCard(
-          icon: Icons.campaign_outlined,
-          color: AppColors.studentBlue,
-          background: AppColors.infoSoft,
-          tag: 'Update',
-          title: 'Open registration is now available',
-          message:
-              'Students can proceed to Open Registration and Subject Registration for subject selection.',
-        ),
-        SizedBox(height: 14),
-        _NoticeCard(
-          icon: Icons.event_available_outlined,
-          color: AppColors.treasuryTeal,
-          background: AppColors.tealSoft,
-          tag: 'Update',
-          title: 'Co-curriculum claims are active',
-          message:
-              'Activity registration and credit claim submission are available now.',
+        StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('notifications')
+              .where('userId', isEqualTo: user.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const _ActionTile(
+                icon: Icons.error_outline,
+                title: 'Unable to load notices',
+                subtitle: 'Please try again later.',
+              );
+            }
+
+            final docs = snapshot.data?.docs.toList() ?? [];
+            docs.sort((a, b) {
+              final aDate = _parseShellDate(a.data()['createdAt']);
+              final bDate = _parseShellDate(b.data()['createdAt']);
+              if (aDate == null && bDate == null) return 0;
+              if (aDate == null) return 1;
+              if (bDate == null) return -1;
+              return bDate.compareTo(aDate);
+            });
+
+            if (docs.isEmpty) {
+              return const _ActionTile(
+                icon: Icons.notifications_none_rounded,
+                title: 'No notices yet',
+                subtitle:
+                    'Module updates and claim decisions will appear here.',
+              );
+            }
+
+            return Column(
+              children: List.generate(docs.length, (index) {
+                final data = docs[index].data();
+                final type = (data['type'] ?? 'info').toString();
+                final createdAt = _parseShellDate(data['createdAt']);
+                final destination = _noticeDestination(data, user);
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index == docs.length - 1 ? 0 : 14,
+                  ),
+                  child: _NoticeCard(
+                    icon: _noticeIcon(type),
+                    color: _noticeColor(type),
+                    background: _noticeBackground(type),
+                    tag: createdAt == null
+                        ? _noticeTag(type)
+                        : '${_noticeTag(type)} - ${_displayShellDate(createdAt)}',
+                    title: (data['title'] ?? 'Notice').toString(),
+                    message: (data['message'] ?? '').toString(),
+                    onTap: destination == null
+                        ? null
+                        : () => Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => destination),
+                            ),
+                  ),
+                );
+              }),
+            );
+          },
         ),
       ],
     );
@@ -218,85 +290,6 @@ class _ProfileTab extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 420),
             child: _ProfileDetailCard(user: user),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SettingsTab extends StatefulWidget {
-  const _SettingsTab({required this.onLogout});
-
-  final Future<void> Function() onLogout;
-
-  @override
-  State<_SettingsTab> createState() => _SettingsTabState();
-}
-
-class _SettingsTabState extends State<_SettingsTab> {
-  final SeedService _seedService = SeedService();
-  bool _isSeeding = false;
-
-  Future<void> _handleSeed() async {
-    setState(() => _isSeeding = true);
-
-    try {
-      final summary = await _seedService.seedDemoData();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Firestore seeded: ${summary.collectionCount} collections, ${summary.documentCount} documents.',
-          ),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Seed failed: $error')));
-    } finally {
-      if (mounted) setState(() => _isSeeding = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _DashboardPage(
-      pageTitle: 'Settings',
-      body: [
-        const _ActionTile(
-          icon: Icons.palette_outlined,
-          title: 'Theme',
-          subtitle: 'SAMS color palette is active.',
-        ),
-        const SizedBox(height: 14),
-        const _ActionTile(
-          icon: Icons.security_outlined,
-          title: 'Authentication',
-          subtitle: 'Firebase Authentication is enabled.',
-        ),
-        const SizedBox(height: 14),
-        const _ActionTile(
-          icon: Icons.cloud_upload_outlined,
-          title: 'Seed Demo Firestore',
-          subtitle: 'Generate demo data automatically.',
-        ),
-        const SizedBox(height: 18),
-        ElevatedButton.icon(
-          onPressed: _isSeeding ? null : _handleSeed,
-          icon: Icon(
-            _isSeeding ? Icons.hourglass_top_rounded : Icons.upload_rounded,
-          ),
-          label: Text(
-            _isSeeding ? 'Seeding Firestore...' : 'Seed Firestore Data',
-          ),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () async => widget.onLogout(),
-          icon: const Icon(Icons.logout_rounded),
-          label: const Text('Logout'),
         ),
       ],
     );
@@ -431,6 +424,7 @@ class _NoticeCard extends StatelessWidget {
     required this.tag,
     required this.title,
     required this.message,
+    this.onTap,
   });
 
   final IconData icon;
@@ -439,83 +433,199 @@ class _NoticeCard extends StatelessWidget {
   final String tag;
   final String title;
   final String message;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.cardShadow,
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
-            alignment: Alignment.center,
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: background,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    tag,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: color,
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: background,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      tag,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textDark,
+                  const SizedBox(height: 10),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  message,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textMuted,
-                    height: 1.55,
+                  const SizedBox(height: 6),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textMuted,
+                      height: 1.55,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+}
+
+String _formatRole(String role) {
+  switch (role.trim().toLowerCase()) {
+    case 'student':
+      return 'Student';
+    case 'lecturer':
+      return 'Lecturer';
+    case 'faculty_registrar':
+      return 'Faculty Registrar';
+    case 'pusat_adab':
+      return 'Pusat Adab';
+    case 'treasury':
+      return 'Treasury';
+    default:
+      return role
+          .replaceAll('_', ' ')
+          .split(' ')
+          .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
+          .join(' ');
+  }
+}
+
+Widget? _noticeDestination(Map<String, dynamic> data, AppUser user) {
+  final module = (data['module'] ?? '').toString().toLowerCase().trim();
+  switch (module) {
+    case 'tuition':
+      return TuitionFeeModule(user: user);
+    case 'attendance':
+      return const AttendanceScreen();
+    case 'registration':
+      return const OpenRegistrationAndSubjectRegistrationScreen();
+    case 'module2':
+    case 'co_curriculum':
+      final role = _coCurriculumRoleForUser(user.role);
+      if (role == null) return null;
+      return CoCurriculumModulePage(
+        role: role,
+        userName: user.fullName,
+        userUid: user.uid,
+      );
+    default:
+      return null;
+  }
+}
+
+DateTime? _parseShellDate(dynamic value) {
+  if (value == null) return null;
+  if (value is Timestamp) return value.toDate();
+  if (value is DateTime) return value;
+  final text = value.toString().trim();
+  if (text.isEmpty) return null;
+  return DateTime.tryParse(text);
+}
+
+String _displayShellDate(DateTime date) {
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return '${date.day} ${months[date.month - 1]} ${date.year}';
+}
+
+String _noticeTag(String type) {
+  switch (type.trim().toLowerCase()) {
+    case 'success':
+      return 'Success';
+    case 'warning':
+    case 'danger':
+      return 'Alert';
+    default:
+      return 'Update';
+  }
+}
+
+IconData _noticeIcon(String type) {
+  switch (type.trim().toLowerCase()) {
+    case 'success':
+      return Icons.verified_outlined;
+    case 'warning':
+      return Icons.report_gmailerrorred_outlined;
+    case 'danger':
+      return Icons.error_outline;
+    default:
+      return Icons.notifications_active_outlined;
+  }
+}
+
+Color _noticeColor(String type) {
+  switch (type.trim().toLowerCase()) {
+    case 'success':
+      return AppColors.success;
+    case 'warning':
+      return AppColors.warning;
+    case 'danger':
+      return AppColors.danger;
+    default:
+      return AppColors.studentBlue;
+  }
+}
+
+Color _noticeBackground(String type) {
+  switch (type.trim().toLowerCase()) {
+    case 'success':
+      return AppColors.successSoft;
+    case 'warning':
+      return AppColors.warningSoft;
+    case 'danger':
+      return AppColors.dangerSoft;
+    default:
+      return AppColors.infoSoft;
   }
 }
 
@@ -545,7 +655,15 @@ class _ProfileDetailCard extends StatelessWidget {
           Container(
             height: 58,
             decoration: BoxDecoration(
-              color: const Color(0xFFF9EEDA),
+              gradient: const LinearGradient(
+                colors: [
+                  AppColors.darkSurface,
+                  AppColors.studentBlue,
+                  AppColors.treasuryTeal,
+                ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
               borderRadius: BorderRadius.circular(16),
             ),
           ),
@@ -602,24 +720,24 @@ class _ProfileDetailCard extends StatelessWidget {
           ),
           _ProfileInfoRow(
             label: 'Role',
-            value: user.role.replaceAll('_', ' '),
+            value: _formatRole(user.role),
             icon: Icons.work_outline_rounded,
+          ),
+          _ProfileInfoRow(
+            label: 'Faculty',
+            value: user.faculty.isEmpty ? 'Not set' : user.faculty,
+            icon: Icons.account_balance_outlined,
+          ),
+          _ProfileInfoRow(
+            label: 'Programme',
+            value: user.programme.isEmpty ? 'Not set' : user.programme,
+            icon: Icons.school_outlined,
           ),
           _ProfileInfoRow(
             label: 'Status',
             value: user.accountStatus,
             icon: Icons.verified_user_outlined,
             pill: true,
-          ),
-          _ProfileInfoRow(
-            label: 'Initials',
-            value: user.avatarInitials,
-            icon: Icons.person_outline_rounded,
-          ),
-          _ProfileInfoRow(
-            label: 'UID',
-            value: user.uid.isEmpty ? 'Not set' : user.uid,
-            icon: Icons.fingerprint_rounded,
             isLast: true,
           ),
         ],
