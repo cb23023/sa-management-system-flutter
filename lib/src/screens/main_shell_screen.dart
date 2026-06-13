@@ -163,21 +163,16 @@ class _HomeTab extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
-                final height = constraints.maxHeight;
                 final crossAxisCount = width >= 680 ? 4 : 2;
-                final spacing = 16.0;
-                final rows = (modules.length / crossAxisCount).ceil();
-                final totalSpacing = spacing * (rows - 1);
-                final itemHeight = (height - totalSpacing).clamp(150.0, 260.0);
+                const spacing = 16.0;
 
                 return GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: modules.length,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: spacing,
                     mainAxisSpacing: spacing,
-                    mainAxisExtent: itemHeight,
+                    mainAxisExtent: 220,
                   ),
                   itemBuilder: (context, index) {
                     final item = modules[index];
