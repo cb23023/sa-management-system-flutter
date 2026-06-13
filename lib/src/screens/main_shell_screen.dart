@@ -250,6 +250,7 @@ class _NoticesTab extends StatelessWidget {
                 final data = docs[index].data();
                 final type = (data['type'] ?? 'info').toString();
                 final createdAt = _parseShellDate(data['createdAt']);
+                final destination = _noticeDestination(data, user);
                 return Padding(
                   padding: EdgeInsets.only(
                     bottom: index == docs.length - 1 ? 0 : 14,
@@ -263,6 +264,11 @@ class _NoticesTab extends StatelessWidget {
                         : '${_noticeTag(type)} - ${_displayShellDate(createdAt)}',
                     title: (data['title'] ?? 'Notice').toString(),
                     message: (data['message'] ?? '').toString(),
+                    onTap: destination == null
+                        ? null
+                        : () => Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => destination),
+                            ),
                   ),
                 );
               }),
@@ -423,6 +429,7 @@ class _NoticeCard extends StatelessWidget {
     required this.tag,
     required this.title,
     required this.message,
+    this.onTap,
   });
 
   final IconData icon;
@@ -431,10 +438,13 @@ class _NoticeCard extends StatelessWidget {
   final String tag;
   final String title;
   final String message;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
@@ -507,7 +517,31 @@ class _NoticeCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
+  }
+}
+
+Widget? _noticeDestination(Map<String, dynamic> data, AppUser user) {
+  final module = (data['module'] ?? '').toString().toLowerCase().trim();
+  switch (module) {
+    case 'tuition':
+      return TuitionFeeModule(user: user);
+    case 'attendance':
+      return const AttendanceScreen();
+    case 'registration':
+      return const OpenRegistrationAndSubjectRegistrationScreen();
+    case 'module2':
+    case 'co_curriculum':
+      final role = _coCurriculumRoleForUser(user.role);
+      if (role == null) return null;
+      return CoCurriculumModulePage(
+        role: role,
+        userName: user.fullName,
+        userUid: user.uid,
+      );
+    default:
+      return null;
   }
 }
 
