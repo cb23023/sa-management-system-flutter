@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/app_user.dart';
-import '../modules/attendance/attendance_screen.dart';
+import 'attendance/attendance_screen.dart';
 import 'co_curriculum_activity_and_credit_claim/co_curriculum_module_page.dart';
 import '../modules/open_registration_and_subject_registration/open_registration_and_subject_registration_screen.dart';
 import 'tuition_fee_and_payment/tuition_fee_module.dart';

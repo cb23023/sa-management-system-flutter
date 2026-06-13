@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/app_user.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
-import '../global/module_shell_screen.dart';
+import '../../modules/module_shell_screen.dart';
 import 'attendance_dashboard.dart';
 import 'attendance_management.dart';
 import 'attendance_record.dart';
