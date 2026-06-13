@@ -231,24 +231,6 @@ class SeedService {
         'avatarInitials': 'NA',
         'createdAt': createdAt,
       },
-      {
-        'uid': 'adm-001',
-        'fullName': 'System Administrator',
-        'email': 'admin@demo.sa',
-        'role': 'admin',
-        'matricId': '',
-        'staffId': 'ADM9001',
-        'faculty': 'ICT Department',
-        'programme': 'System Administration',
-        'semester': semester,
-        'currentSemester': semester,
-        'accountStatus': 'Active',
-        'maxCreditHours': 0,
-        'completedSubjects': <String>[],
-        'themeRole': 'admin',
-        'avatarInitials': 'SA',
-        'createdAt': createdAt,
-      },
     ].map((user) => {'id': user['email'], ...user}).toList();
 
     // ── tuition_fees (one doc per student, keyed by uid) ─────────────────────
@@ -344,18 +326,6 @@ class SeedService {
 
     // ── notifications ────────────────────────────────────────────────────────
     final notifications = [
-      {
-        'id': 'notif-adm-001',
-        'userId': 'adm-001',
-        'title': 'Firestore seed ready',
-        'message':
-            'Initial demo documents can be written from the Settings page.',
-        'type': 'info',
-        'module': 'system',
-        'isRead': false,
-        'createdAt': createdAt,
-        'actionLink': '',
-      },
       {
         'id': 'notif-stu-001',
         'userId': 'stu-001',
