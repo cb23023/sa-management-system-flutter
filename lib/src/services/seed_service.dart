@@ -284,10 +284,43 @@ class SeedService {
     final attendanceRecords = [
       {
         'id': 'att-001',
-        'activityId': 'act-001',
+        'attendanceCategory': 'module',
+        'sessionId': 'session-001',
+        'subjectName': 'Leadership Camp',
+        'sessionName': 'Check In Session',
         'studentId': 'stu-001',
-        'present': true,
-        'validatedAt': createdAt,
+        'studentIdentifier': '2023012345',
+        'studentName': 'Ahmad Malik',
+        'status': 'Present',
+        'detail': 'Checked in successfully',
+        'submissionMethod': 'QR',
+        'classCode': '450001',
+        'date': '2026-05-10',
+        'time': '08:00 - 10:00',
+        'lecturerId': 'lec-001',
+        'lecturerName': 'Dr. Nur Hidayah',
+        'createdAt': createdAt,
+      },
+    ];
+
+    final attendanceSessions = [
+      {
+        'id': 'session-001',
+        'attendanceCategory': 'module',
+        'subjectName': 'Leadership Camp',
+        'sessionName': 'Check In Session',
+        'date': '2026-05-10',
+        'time': '08:00 - 10:00',
+        'classCode': '450001',
+        'qrValue': 'QR-session-001',
+        'lecturerId': 'lec-001',
+        'lecturerName': 'Dr. Nur Hidayah',
+        'latitude': 3.0738,
+        'longitude': 101.5183,
+        'allowedRadiusMeters': 100,
+        'isActive': true,
+        'sourceOptionId': 'act-001',
+        'createdAt': createdAt,
       },
     ];
 
@@ -301,6 +334,7 @@ class SeedService {
       'activities': activities,
       'activity_registrations': activityRegistrations,
       'credit_claims': creditClaims,
+      'attendance_sessions': attendanceSessions,
       'attendance_records': attendanceRecords,
     };
   }
