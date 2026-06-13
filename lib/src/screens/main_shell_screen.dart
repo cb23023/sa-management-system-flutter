@@ -7,7 +7,6 @@ import 'attendance/attendance_screen.dart';
 import 'co_curriculum_activity_and_credit_claim/co_curriculum_module_page.dart';
 import 'open_registration_and_subject_registration/open_registration_and_subject_registration_screen.dart';
 import 'tuition_fee_and_payment/tuition_fee_module.dart';
-import '../services/seed_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/module_card.dart';
@@ -50,7 +49,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
       _HomeTab(user: widget.user),
       _NoticesTab(user: widget.user),
       _ProfileTab(user: widget.user),
-      _SettingsTab(onLogout: widget.onLogout),
     ];
 
     return Scaffold(
@@ -60,10 +58,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
             color: AppColors.softBackground,
             child: Column(
               children: [
-                Expanded(child: pages[_currentIndex]),
+                Expanded(child: pages[_currentIndex.clamp(0, 2)]),
                 AppBottomNav(
                   currentIndex: _currentIndex,
-                  onTap: (index) => setState(() => _currentIndex = index),
+                  onTap: (index) {
+                    if (index == 3) {
+                      widget.onLogout();
+                      return;
+                    }
+                    setState(() => _currentIndex = index);
+                  },
                 ),
               ],
             ),
@@ -159,21 +163,16 @@ class _HomeTab extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
-                final height = constraints.maxHeight;
                 final crossAxisCount = width >= 680 ? 4 : 2;
-                final spacing = 16.0;
-                final rows = (modules.length / crossAxisCount).ceil();
-                final totalSpacing = spacing * (rows - 1);
-                final itemHeight = (height - totalSpacing).clamp(150.0, 260.0);
+                const spacing = 16.0;
 
                 return GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: modules.length,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: spacing,
                     mainAxisSpacing: spacing,
-                    mainAxisExtent: itemHeight,
+                    mainAxisExtent: 220,
                   ),
                   itemBuilder: (context, index) {
                     final item = modules[index];
@@ -222,7 +221,7 @@ class _NoticesTab extends StatelessWidget {
               );
             }
 
-            final docs = snapshot.data?.docs.toList() ?? const [];
+            final docs = snapshot.data?.docs.toList() ?? [];
             docs.sort((a, b) {
               final aDate = _parseShellDate(a.data()['createdAt']);
               final bDate = _parseShellDate(b.data()['createdAt']);
@@ -246,6 +245,7 @@ class _NoticesTab extends StatelessWidget {
                 final data = docs[index].data();
                 final type = (data['type'] ?? 'info').toString();
                 final createdAt = _parseShellDate(data['createdAt']);
+                final destination = _noticeDestination(data, user);
                 return Padding(
                   padding: EdgeInsets.only(
                     bottom: index == docs.length - 1 ? 0 : 14,
@@ -259,6 +259,11 @@ class _NoticesTab extends StatelessWidget {
                         : '${_noticeTag(type)} - ${_displayShellDate(createdAt)}',
                     title: (data['title'] ?? 'Notice').toString(),
                     message: (data['message'] ?? '').toString(),
+                    onTap: destination == null
+                        ? null
+                        : () => Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => destination),
+                            ),
                   ),
                 );
               }),
@@ -285,85 +290,6 @@ class _ProfileTab extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 420),
             child: _ProfileDetailCard(user: user),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SettingsTab extends StatefulWidget {
-  const _SettingsTab({required this.onLogout});
-
-  final Future<void> Function() onLogout;
-
-  @override
-  State<_SettingsTab> createState() => _SettingsTabState();
-}
-
-class _SettingsTabState extends State<_SettingsTab> {
-  final SeedService _seedService = SeedService();
-  bool _isSeeding = false;
-
-  Future<void> _handleSeed() async {
-    setState(() => _isSeeding = true);
-
-    try {
-      final summary = await _seedService.seedDemoData();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Firestore seeded: ${summary.collectionCount} collections, ${summary.documentCount} documents.',
-          ),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Seed failed: $error')));
-    } finally {
-      if (mounted) setState(() => _isSeeding = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _DashboardPage(
-      pageTitle: 'Settings',
-      body: [
-        const _ActionTile(
-          icon: Icons.palette_outlined,
-          title: 'Theme',
-          subtitle: 'SAMS color palette is active.',
-        ),
-        const SizedBox(height: 14),
-        const _ActionTile(
-          icon: Icons.security_outlined,
-          title: 'Authentication',
-          subtitle: 'Firebase Authentication is enabled.',
-        ),
-        const SizedBox(height: 14),
-        const _ActionTile(
-          icon: Icons.cloud_upload_outlined,
-          title: 'Seed Demo Firestore',
-          subtitle: 'Generate demo data automatically.',
-        ),
-        const SizedBox(height: 18),
-        ElevatedButton.icon(
-          onPressed: _isSeeding ? null : _handleSeed,
-          icon: Icon(
-            _isSeeding ? Icons.hourglass_top_rounded : Icons.upload_rounded,
-          ),
-          label: Text(
-            _isSeeding ? 'Seeding Firestore...' : 'Seed Firestore Data',
-          ),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () async => widget.onLogout(),
-          icon: const Icon(Icons.logout_rounded),
-          label: const Text('Logout'),
         ),
       ],
     );
@@ -498,6 +424,7 @@ class _NoticeCard extends StatelessWidget {
     required this.tag,
     required this.title,
     required this.message,
+    this.onTap,
   });
 
   final IconData icon;
@@ -506,10 +433,13 @@ class _NoticeCard extends StatelessWidget {
   final String tag;
   final String title;
   final String message;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
@@ -582,7 +512,48 @@ class _NoticeCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
+  }
+}
+
+String _formatRole(String role) {
+  switch (role.trim().toLowerCase()) {
+    case 'student':
+      return 'Student';
+    case 'lecturer':
+      return 'Lecturer';
+    case 'faculty_registrar':
+      return 'Faculty Registrar';
+    case 'pusat_adab':
+      return 'Pusat Adab';
+    case 'treasury':
+      return 'Treasury';
+    default:
+      return role.replaceAll('_', ' ').split(' ').map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}').join(' ');
+  }
+}
+
+Widget? _noticeDestination(Map<String, dynamic> data, AppUser user) {
+  final module = (data['module'] ?? '').toString().toLowerCase().trim();
+  switch (module) {
+    case 'tuition':
+      return TuitionFeeModule(user: user);
+    case 'attendance':
+      return const AttendanceScreen();
+    case 'registration':
+      return const OpenRegistrationAndSubjectRegistrationScreen();
+    case 'module2':
+    case 'co_curriculum':
+      final role = _coCurriculumRoleForUser(user.role);
+      if (role == null) return null;
+      return CoCurriculumModulePage(
+        role: role,
+        userName: user.fullName,
+        userUid: user.uid,
+      );
+    default:
+      return null;
   }
 }
 
@@ -698,7 +669,11 @@ class _ProfileDetailCard extends StatelessWidget {
           Container(
             height: 58,
             decoration: BoxDecoration(
-              color: const Color(0xFFF9EEDA),
+              gradient: const LinearGradient(
+                colors: [AppColors.darkSurface, AppColors.studentBlue, AppColors.treasuryTeal],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
               borderRadius: BorderRadius.circular(16),
             ),
           ),
@@ -755,24 +730,24 @@ class _ProfileDetailCard extends StatelessWidget {
           ),
           _ProfileInfoRow(
             label: 'Role',
-            value: user.role.replaceAll('_', ' '),
+            value: _formatRole(user.role),
             icon: Icons.work_outline_rounded,
+          ),
+          _ProfileInfoRow(
+            label: 'Faculty',
+            value: user.faculty.isEmpty ? 'Not set' : user.faculty,
+            icon: Icons.account_balance_outlined,
+          ),
+          _ProfileInfoRow(
+            label: 'Programme',
+            value: user.programme.isEmpty ? 'Not set' : user.programme,
+            icon: Icons.school_outlined,
           ),
           _ProfileInfoRow(
             label: 'Status',
             value: user.accountStatus,
             icon: Icons.verified_user_outlined,
             pill: true,
-          ),
-          _ProfileInfoRow(
-            label: 'Initials',
-            value: user.avatarInitials,
-            icon: Icons.person_outline_rounded,
-          ),
-          _ProfileInfoRow(
-            label: 'UID',
-            value: user.uid.isEmpty ? 'Not set' : user.uid,
-            icon: Icons.fingerprint_rounded,
             isLast: true,
           ),
         ],
