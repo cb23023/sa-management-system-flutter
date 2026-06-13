@@ -7,11 +7,13 @@ class ModuleTabItem {
     required this.label,
     required this.icon,
     required this.content,
+    this.badgeBuilder,
   });
 
   final String label;
   final IconData icon;
   final Widget content;
+  final WidgetBuilder? badgeBuilder;
 }
 
 class ModuleShellScreen extends StatefulWidget {
@@ -36,19 +38,57 @@ class ModuleShellScreen extends StatefulWidget {
   State<ModuleShellScreen> createState() => _ModuleShellScreenState();
 }
 
+class ModuleShellScope extends InheritedWidget {
+  const ModuleShellScope({
+    super.key,
+    required this.goToTab,
+    required this.goToTabLabel,
+    required super.child,
+  });
+
+  final void Function(int index) goToTab;
+  final void Function(String label) goToTabLabel;
+
+  static ModuleShellScope? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ModuleShellScope>();
+  }
+
+  @override
+  bool updateShouldNotify(ModuleShellScope oldWidget) => false;
+}
+
 class _ModuleShellScreenState extends State<ModuleShellScreen> {
   int _currentIndex = 0;
+
+  void _goToTab(int index) {
+    if (index < 0 || index >= widget.tabs.length) {
+      return;
+    }
+    setState(() => _currentIndex = index);
+  }
+
+  void _goToTabLabel(String label) {
+    final index = widget.tabs.indexWhere(
+      (tab) => tab.label.trim().toLowerCase() == label.trim().toLowerCase(),
+    );
+    if (index >= 0) {
+      _goToTab(index);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final currentTab = widget.tabs[_currentIndex];
 
-    return Scaffold(
-      backgroundColor: AppColors.softBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
+    return ModuleShellScope(
+      goToTab: _goToTab,
+      goToTabLabel: _goToTabLabel,
+      child: Scaffold(
+        backgroundColor: AppColors.softBackground,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Container(
               height: 76,
               padding: const EdgeInsets.symmetric(horizontal: 8),
               decoration: const BoxDecoration(
@@ -190,7 +230,7 @@ class _ModuleShellScreenState extends State<ModuleShellScreen> {
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(18),
-                            onTap: () => setState(() => _currentIndex = index),
+                            onTap: () => _goToTab(index),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 220),
                               padding: const EdgeInsets.symmetric(vertical: 10),
@@ -208,12 +248,23 @@ class _ModuleShellScreenState extends State<ModuleShellScreen> {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    item.icon,
-                                    size: 18,
-                                    color: selected
-                                        ? Colors.white
-                                        : AppColors.textMuted,
+                                  Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      Icon(
+                                        item.icon,
+                                        size: 18,
+                                        color: selected
+                                            ? Colors.white
+                                            : AppColors.textMuted,
+                                      ),
+                                      if (item.badgeBuilder != null)
+                                        Positioned(
+                                          right: -10,
+                                          top: -8,
+                                          child: item.badgeBuilder!(context),
+                                        ),
+                                    ],
                                   ),
                                   const SizedBox(height: 5),
                                   Text(
@@ -240,7 +291,8 @@ class _ModuleShellScreenState extends State<ModuleShellScreen> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
