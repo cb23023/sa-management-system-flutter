@@ -1,15 +1,31 @@
 import 'package:flutter/material.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/app_user.dart';
-import '../modules/attendance/attendance_screen.dart';
-import '../modules/co_curriculum_activity_and_credit_claim/co_curriculum_activity_and_credit_claim_screen.dart';
+import 'attendance/attendance_screen.dart';
+import 'co_curriculum_activity_and_credit_claim/co_curriculum_module_page.dart';
 import '../modules/open_registration_and_subject_registration/open_registration_and_subject_registration_screen.dart';
-import '../modules/tuition_fee_and_payment/tuition_fee_and_payment_screen.dart';
+import 'tuition_fee_and_payment/tuition_fee_module.dart';
 import '../services/seed_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/module_card.dart';
 import '../widgets/phone_frame.dart';
+
+CoCurriculumRole? _coCurriculumRoleForUser(String role) {
+  switch (role.trim().toLowerCase()) {
+    case 'pusat_adab':
+    case 'pusat adab':
+      return CoCurriculumRole.pusatAdab;
+    case 'lecturer':
+      return CoCurriculumRole.lecturer;
+    case 'student':
+      return CoCurriculumRole.student;
+    default:
+      return null;
+  }
+}
 
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({
@@ -32,7 +48,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget build(BuildContext context) {
     final pages = [
       _HomeTab(user: widget.user),
-      const _NoticesTab(),
+      _NoticesTab(user: widget.user),
       _ProfileTab(user: widget.user),
       _SettingsTab(onLogout: widget.onLogout),
     ];
@@ -65,6 +81,8 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final coCurriculumRole = _coCurriculumRoleForUser(user.role);
+
     final modules = [
       (
         const ModuleCardData(
@@ -81,18 +99,25 @@ class _HomeTab extends StatelessWidget {
         const OpenRegistrationAndSubjectRegistrationScreen(),
       ),
       (
-        const ModuleCardData(
+        ModuleCardData(
           code: 'M2',
           title: 'Co Curriculum Activity and Credit Claim',
-          subtitle:
-              'Join approved activities and submit credit claims with validated attendance records.',
+          subtitle: coCurriculumRole == null
+              ? 'Available only for Student, Lecturer, and Pusat Adab accounts.'
+              : 'Join approved activities and submit credit claims with validated attendance records.',
           status: '',
           foreground: AppColors.treasuryTeal,
           background: AppColors.tealSoft,
-          enabled: true,
+          enabled: coCurriculumRole != null,
           icon: Icons.groups_rounded,
         ),
-        const CoCurriculumActivityAndCreditClaimScreen(),
+        coCurriculumRole == null
+            ? null
+            : CoCurriculumModulePage(
+                role: coCurriculumRole,
+                userName: user.fullName,
+                userUid: user.uid,
+              ),
       ),
       (
         const ModuleCardData(
@@ -106,7 +131,7 @@ class _HomeTab extends StatelessWidget {
           enabled: true,
           icon: Icons.account_balance_wallet_rounded,
         ),
-        const TuitionFeeAndPaymentScreen(),
+        TuitionFeeModule(user: user),
       ),
       (
         const ModuleCardData(
@@ -154,11 +179,13 @@ class _HomeTab extends StatelessWidget {
                     final item = modules[index];
                     return ModuleCard(
                       data: item.$1,
-                      onTap: () {
-                        Navigator.of(
-                          context,
-                        ).push(MaterialPageRoute(builder: (_) => item.$2));
-                      },
+                      onTap: item.$2 == null
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => item.$2!),
+                              );
+                            },
                     );
                   },
                 );
@@ -172,31 +199,71 @@ class _HomeTab extends StatelessWidget {
 }
 
 class _NoticesTab extends StatelessWidget {
-  const _NoticesTab();
+  const _NoticesTab({required this.user});
+
+  final AppUser user;
 
   @override
   Widget build(BuildContext context) {
-    return const _DashboardPage(
+    return _DashboardPage(
       pageTitle: 'Notices',
       body: [
-        _NoticeCard(
-          icon: Icons.campaign_outlined,
-          color: AppColors.studentBlue,
-          background: AppColors.infoSoft,
-          tag: 'Update',
-          title: 'Open registration is now available',
-          message:
-              'Students can proceed to Open Registration and Subject Registration for subject selection.',
-        ),
-        SizedBox(height: 14),
-        _NoticeCard(
-          icon: Icons.event_available_outlined,
-          color: AppColors.treasuryTeal,
-          background: AppColors.tealSoft,
-          tag: 'Update',
-          title: 'Co-curriculum claims are active',
-          message:
-              'Activity registration and credit claim submission are available now.',
+        StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('notifications')
+              .where('userId', isEqualTo: user.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const _ActionTile(
+                icon: Icons.error_outline,
+                title: 'Unable to load notices',
+                subtitle: 'Please try again later.',
+              );
+            }
+
+            final docs = snapshot.data?.docs.toList() ?? const [];
+            docs.sort((a, b) {
+              final aDate = _parseShellDate(a.data()['createdAt']);
+              final bDate = _parseShellDate(b.data()['createdAt']);
+              if (aDate == null && bDate == null) return 0;
+              if (aDate == null) return 1;
+              if (bDate == null) return -1;
+              return bDate.compareTo(aDate);
+            });
+
+            if (docs.isEmpty) {
+              return const _ActionTile(
+                icon: Icons.notifications_none_rounded,
+                title: 'No notices yet',
+                subtitle:
+                    'Module updates and claim decisions will appear here.',
+              );
+            }
+
+            return Column(
+              children: List.generate(docs.length, (index) {
+                final data = docs[index].data();
+                final type = (data['type'] ?? 'info').toString();
+                final createdAt = _parseShellDate(data['createdAt']);
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index == docs.length - 1 ? 0 : 14,
+                  ),
+                  child: _NoticeCard(
+                    icon: _noticeIcon(type),
+                    color: _noticeColor(type),
+                    background: _noticeBackground(type),
+                    tag: createdAt == null
+                        ? _noticeTag(type)
+                        : '${_noticeTag(type)} - ${_displayShellDate(createdAt)}',
+                    title: (data['title'] ?? 'Notice').toString(),
+                    message: (data['message'] ?? '').toString(),
+                  ),
+                );
+              }),
+            );
+          },
         ),
       ],
     );
@@ -516,6 +583,92 @@ class _NoticeCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+DateTime? _parseShellDate(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is Timestamp) {
+    return value.toDate();
+  }
+  if (value is DateTime) {
+    return value;
+  }
+  final text = value.toString().trim();
+  if (text.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(text);
+}
+
+String _displayShellDate(DateTime date) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${date.day} ${months[date.month - 1]} ${date.year}';
+}
+
+String _noticeTag(String type) {
+  switch (type.trim().toLowerCase()) {
+    case 'success':
+      return 'Success';
+    case 'warning':
+    case 'danger':
+      return 'Alert';
+    default:
+      return 'Update';
+  }
+}
+
+IconData _noticeIcon(String type) {
+  switch (type.trim().toLowerCase()) {
+    case 'success':
+      return Icons.verified_outlined;
+    case 'warning':
+      return Icons.report_gmailerrorred_outlined;
+    case 'danger':
+      return Icons.error_outline;
+    default:
+      return Icons.notifications_active_outlined;
+  }
+}
+
+Color _noticeColor(String type) {
+  switch (type.trim().toLowerCase()) {
+    case 'success':
+      return AppColors.success;
+    case 'warning':
+      return AppColors.warning;
+    case 'danger':
+      return AppColors.danger;
+    default:
+      return AppColors.studentBlue;
+  }
+}
+
+Color _noticeBackground(String type) {
+  switch (type.trim().toLowerCase()) {
+    case 'success':
+      return AppColors.successSoft;
+    case 'warning':
+      return AppColors.warningSoft;
+    case 'danger':
+      return AppColors.dangerSoft;
+    default:
+      return AppColors.infoSoft;
   }
 }
 
