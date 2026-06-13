@@ -7,7 +7,6 @@ import 'attendance/attendance_screen.dart';
 import 'co_curriculum_activity_and_credit_claim/co_curriculum_module_page.dart';
 import '../modules/open_registration_and_subject_registration/open_registration_and_subject_registration_screen.dart';
 import 'tuition_fee_and_payment/tuition_fee_module.dart';
-import '../services/seed_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/module_card.dart';
@@ -50,7 +49,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
       _HomeTab(user: widget.user),
       _NoticesTab(user: widget.user),
       _ProfileTab(user: widget.user),
-      _SettingsTab(onLogout: widget.onLogout),
     ];
 
     return Scaffold(
@@ -60,10 +58,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
             color: AppColors.softBackground,
             child: Column(
               children: [
-                Expanded(child: pages[_currentIndex]),
+                Expanded(child: pages[_currentIndex.clamp(0, 2)]),
                 AppBottomNav(
                   currentIndex: _currentIndex,
-                  onTap: (index) => setState(() => _currentIndex = index),
+                  onTap: (index) {
+                    if (index == 3) {
+                      widget.onLogout();
+                      return;
+                    }
+                    setState(() => _currentIndex = index);
+                  },
                 ),
               ],
             ),
@@ -285,85 +289,6 @@ class _ProfileTab extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 420),
             child: _ProfileDetailCard(user: user),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SettingsTab extends StatefulWidget {
-  const _SettingsTab({required this.onLogout});
-
-  final Future<void> Function() onLogout;
-
-  @override
-  State<_SettingsTab> createState() => _SettingsTabState();
-}
-
-class _SettingsTabState extends State<_SettingsTab> {
-  final SeedService _seedService = SeedService();
-  bool _isSeeding = false;
-
-  Future<void> _handleSeed() async {
-    setState(() => _isSeeding = true);
-
-    try {
-      final summary = await _seedService.seedDemoData();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Firestore seeded: ${summary.collectionCount} collections, ${summary.documentCount} documents.',
-          ),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Seed failed: $error')));
-    } finally {
-      if (mounted) setState(() => _isSeeding = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _DashboardPage(
-      pageTitle: 'Settings',
-      body: [
-        const _ActionTile(
-          icon: Icons.palette_outlined,
-          title: 'Theme',
-          subtitle: 'SAMS color palette is active.',
-        ),
-        const SizedBox(height: 14),
-        const _ActionTile(
-          icon: Icons.security_outlined,
-          title: 'Authentication',
-          subtitle: 'Firebase Authentication is enabled.',
-        ),
-        const SizedBox(height: 14),
-        const _ActionTile(
-          icon: Icons.cloud_upload_outlined,
-          title: 'Seed Demo Firestore',
-          subtitle: 'Generate demo data automatically.',
-        ),
-        const SizedBox(height: 18),
-        ElevatedButton.icon(
-          onPressed: _isSeeding ? null : _handleSeed,
-          icon: Icon(
-            _isSeeding ? Icons.hourglass_top_rounded : Icons.upload_rounded,
-          ),
-          label: Text(
-            _isSeeding ? 'Seeding Firestore...' : 'Seed Firestore Data',
-          ),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () async => widget.onLogout(),
-          icon: const Icon(Icons.logout_rounded),
-          label: const Text('Logout'),
         ),
       ],
     );

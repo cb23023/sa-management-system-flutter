@@ -18,7 +18,7 @@ class AppBottomNav extends StatelessWidget {
       (Icons.dashboard_rounded, 'Home'),
       (Icons.notifications_active_outlined, 'Notices'),
       (Icons.person_outline_rounded, 'Profile'),
-      (Icons.settings_outlined, 'Settings'),
+      (Icons.logout_rounded, 'Logout'),
     ];
 
     return Container(
