@@ -331,8 +331,8 @@ class _StudentClaimsTabState extends State<_StudentClaimsTab> {
                         .toList();
                     final selectedTotalMarks = selectedActivities.fold<int>(
                       0,
-                      (sum, item) =>
-                          sum + (((item['totalMarks'] as num?)?.toInt()) ?? 0),
+                      (acc, item) =>
+                          acc + (((item['totalMarks'] as num?)?.toInt()) ?? 0),
                     );
                     final selectedAverageMark = selectedActivities.isEmpty
                         ? 0
@@ -340,13 +340,13 @@ class _StudentClaimsTabState extends State<_StudentClaimsTab> {
                               .round();
                     final selectedTotalHours = selectedActivities.fold<int>(
                       0,
-                      (sum, item) =>
-                          sum + (((item['hours'] as num?)?.toInt()) ?? 0),
+                      (acc, item) =>
+                          acc + (((item['hours'] as num?)?.toInt()) ?? 0),
                     );
                     final selectedTotalCats = selectedActivities.fold<int>(
                       0,
-                      (sum, item) =>
-                          sum + (((item['cats'] as num?)?.toInt()) ?? 0),
+                      (acc, item) =>
+                          acc + (((item['cats'] as num?)?.toInt()) ?? 0),
                     );
                     final sortedClaimDocs = [...claimDocs]
                       ..sort((a, b) {

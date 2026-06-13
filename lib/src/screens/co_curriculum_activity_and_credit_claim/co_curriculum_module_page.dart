@@ -63,17 +63,6 @@ String _subtitleForRole(CoCurriculumRole role) {
   }
 }
 
-String _roleLabel(CoCurriculumRole role) {
-  switch (role) {
-    case CoCurriculumRole.student:
-      return 'Student';
-    case CoCurriculumRole.pusatAdab:
-      return 'Pusat Adab';
-    case CoCurriculumRole.lecturer:
-      return 'Lecturer';
-  }
-}
-
 Color _accentForRole(CoCurriculumRole role) {
   switch (role) {
     case CoCurriculumRole.student:
