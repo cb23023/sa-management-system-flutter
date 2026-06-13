@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../../theme/app_colors.dart';
-import '../../models/attendance/attendance_record_model.dart';
-import '../../models/attendance/attendance_session_model.dart';
+import '../theme/app_colors.dart';
+import '../models/attendance/attendance_record_model.dart';
+import '../models/attendance/attendance_session_model.dart';
 
 // ── Color helpers ─────────────────────────────────────────────────────────────
 
