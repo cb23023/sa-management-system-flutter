@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../models/app_user.dart';
-import '../../services/auth_service.dart';
-import '../../theme/app_colors.dart';
-import '../../widgets/phone_frame.dart';
+import '../models/app_user.dart';
+import '../services/auth_service.dart';
+import '../theme/app_colors.dart';
+import '../widgets/phone_frame.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
