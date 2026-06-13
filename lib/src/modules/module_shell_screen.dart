@@ -7,12 +7,14 @@ class ModuleTabItem {
     required this.label,
     required this.icon,
     required this.content,
+    this.description,
     this.badgeBuilder,
   });
 
   final String label;
   final IconData icon;
   final Widget content;
+  final String? description;
   final WidgetBuilder? badgeBuilder;
 }
 
