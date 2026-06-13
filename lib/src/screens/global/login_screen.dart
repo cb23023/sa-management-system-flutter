@@ -26,8 +26,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   static const _savedCredentialsKey = 'saved_login_credentials_v1';
-  final _emailController = TextEditingController(text: 'admin@demo.sa');
-  final _passwordController = TextEditingController(text: 'admin123');
+  final _emailController = TextEditingController(text: 'student@demo.sa');
+  final _passwordController = TextEditingController(text: 'student123');
   List<_SavedCredential> _savedCredentials = const [];
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -541,7 +541,7 @@ class _LoginCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           const Text(
-            'admin@demo.sa / admin123',
+            'student@demo.sa / student123',
             style: TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
         ],
