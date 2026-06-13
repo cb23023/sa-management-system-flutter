@@ -222,7 +222,7 @@ class _NoticesTab extends StatelessWidget {
               );
             }
 
-            final docs = snapshot.data?.docs.toList() ?? const [];
+            final docs = snapshot.data?.docs.toList() ?? [];
             docs.sort((a, b) {
               final aDate = _parseShellDate(a.data()['createdAt']);
               final bDate = _parseShellDate(b.data()['createdAt']);
