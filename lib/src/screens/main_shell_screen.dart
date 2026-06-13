@@ -100,7 +100,7 @@ class _HomeTab extends StatelessWidget {
           enabled: true,
           icon: Icons.menu_book_rounded,
         ),
-        const OpenRegistrationAndSubjectRegistrationScreen(),
+        OpenRegistrationAndSubjectRegistrationScreen(user: user),
       ),
       (
         ModuleCardData(
@@ -542,7 +542,7 @@ Widget? _noticeDestination(Map<String, dynamic> data, AppUser user) {
     case 'attendance':
       return const AttendanceScreen();
     case 'registration':
-      return const OpenRegistrationAndSubjectRegistrationScreen();
+      return OpenRegistrationAndSubjectRegistrationScreen(user: user);
     case 'module2':
     case 'co_curriculum':
       final role = _coCurriculumRoleForUser(user.role);
