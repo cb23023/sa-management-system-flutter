@@ -309,7 +309,7 @@ class ClaimController {
     return {'success': true, 'message': 'Claim marked as rejected.'};
   }
 
-  Future<List<_ReviewClaimRecord>> buildClaimRecords(
+  Future<List<_ReviewClaimRecord>> _buildClaimRecords(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) async {
     final usersSnapshot = await users.get();

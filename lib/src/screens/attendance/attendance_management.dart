@@ -102,31 +102,40 @@ class _AttendanceManagementScreenState
       );
     }
     _controller.selectedOptionId ??= options.first.id;
-    return DropdownButtonFormField<String>(
-      isExpanded: true,
-      itemHeight: 64,
-      initialValue: options.any((o) => o.id == _controller.selectedOptionId)
-          ? _controller.selectedOptionId
-          : options.first.id,
-      decoration: InputDecoration(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        labelText: _controller.selectedCategory == AttendanceCategory.module
-            ? 'Co-Curriculum Activity'
-            : 'Academic Subject',
+    return SizedBox(
+      height: 84,
+      child: DropdownButtonFormField<String>(
+        isExpanded: true,
+        isDense: false,
+        itemHeight: 68,
+        initialValue: options.any((o) => o.id == _controller.selectedOptionId)
+            ? _controller.selectedOptionId
+            : options.first.id,
+        decoration: InputDecoration(
+          contentPadding:
+              const EdgeInsets.fromLTRB(18, 16, 12, 14),
+          labelText: _controller.selectedCategory == AttendanceCategory.module
+              ? 'Co-Curriculum Activity'
+              : 'Academic Subject',
+        ),
+        selectedItemBuilder: (context) {
+          return options
+              .map((o) => _AttendanceOptionLabel(option: o, compact: true))
+              .toList();
+        },
+        items: options
+            .map(
+              (o) => DropdownMenuItem(
+                value: o.id,
+                child: _AttendanceOptionLabel(option: o),
+              ),
+            )
+            .toList(),
+        onChanged: (value) {
+          if (value == null) return;
+          setState(() => _controller.selectedOptionId = value);
+        },
       ),
-      items: options
-          .map(
-            (o) => DropdownMenuItem(
-              value: o.id,
-              child: _AttendanceOptionLabel(option: o),
-            ),
-          )
-          .toList(),
-      onChanged: (value) {
-        if (value == null) return;
-        setState(() => _controller.selectedOptionId = value);
-      },
     );
   }
 
@@ -326,9 +335,13 @@ class _AttendanceManagementScreenState
 // ── Student: check in ─────────────────────────────────────────────────────────
 
 class _AttendanceOptionLabel extends StatelessWidget {
-  const _AttendanceOptionLabel({required this.option});
+  const _AttendanceOptionLabel({
+    required this.option,
+    this.compact = false,
+  });
 
   final AttendanceOption option;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -346,13 +359,13 @@ class _AttendanceOptionLabel extends StatelessWidget {
             color: AppColors.textDark,
           ),
         ),
-        const SizedBox(height: 2),
+        SizedBox(height: compact ? 1 : 3),
         Text(
           option.subtitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 11.5,
+          style: TextStyle(
+            fontSize: compact ? 10.5 : 11.5,
             fontWeight: FontWeight.w600,
             color: AppColors.textMuted,
           ),

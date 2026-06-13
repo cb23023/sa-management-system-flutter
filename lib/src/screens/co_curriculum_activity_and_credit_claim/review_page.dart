@@ -69,7 +69,7 @@ class _ClaimReviewLoaderPage extends StatelessWidget {
     if (snapshot.docs.isEmpty) {
       return null;
     }
-    final records = await _claimController.buildClaimRecords(snapshot.docs);
+    final records = await _claimController._buildClaimRecords(snapshot.docs);
     return records.isEmpty ? null : records.first;
   }
 
@@ -282,7 +282,7 @@ class _PusatAdabClaimsTabState extends State<_PusatAdabClaimsTab> {
                       <QueryDocumentSnapshot<Map<String, dynamic>>>[];
 
                   return FutureBuilder<List<_ReviewClaimRecord>>(
-                    future: _claimController.buildClaimRecords(docs),
+                    future: _claimController._buildClaimRecords(docs),
                     builder: (context, recordsSnapshot) {
                       if (recordsSnapshot.connectionState ==
                           ConnectionState.waiting) {

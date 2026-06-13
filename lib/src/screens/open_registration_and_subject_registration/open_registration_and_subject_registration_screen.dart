@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
-import '../module_shell_screen.dart';
+import '../../modules/module_shell_screen.dart';
 
 class OpenRegistrationAndSubjectRegistrationScreen extends StatelessWidget {
   const OpenRegistrationAndSubjectRegistrationScreen({super.key});

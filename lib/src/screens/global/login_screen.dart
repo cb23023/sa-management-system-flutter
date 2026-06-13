@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/app_user.dart';
-import '../services/auth_service.dart';
-import '../theme/app_colors.dart';
-import '../widgets/phone_frame.dart';
+import '../../models/app_user.dart';
+import '../../services/auth_service.dart';
+import '../../theme/app_colors.dart';
+import '../../widgets/phone_frame.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -21,8 +25,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  static const _savedCredentialsKey = 'saved_login_credentials_v1';
   final _emailController = TextEditingController(text: 'admin@demo.sa');
   final _passwordController = TextEditingController(text: 'admin123');
+  List<_SavedCredential> _savedCredentials = const [];
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
@@ -34,8 +40,156 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final encodedCredentials =
+          preferences.getStringList(_savedCredentialsKey) ?? const [];
+      final savedCredentials = encodedCredentials
+          .map(_SavedCredential.fromStorage)
+          .toList();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _savedCredentials = savedCredentials;
+      });
+    } on MissingPluginException {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _savedCredentials = const [];
+      });
+    }
+  }
+
+  Future<void> _saveCredential({
+    required String email,
+    required String password,
+  }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    final updatedCredentials = [
+      _SavedCredential(email: normalizedEmail, password: password),
+      ..._savedCredentials.where(
+        (credential) => credential.email != normalizedEmail,
+      ),
+    ];
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setStringList(
+        _savedCredentialsKey,
+        updatedCredentials.map((credential) => credential.toStorage()).toList(),
+      );
+    } on MissingPluginException {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _savedCredentials = updatedCredentials;
+    });
+  }
+
+  Future<void> _removeCredential(String email) async {
+    final updatedCredentials = _savedCredentials
+        .where((credential) => credential.email != email)
+        .toList();
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setStringList(
+        _savedCredentialsKey,
+        updatedCredentials.map((credential) => credential.toStorage()).toList(),
+      );
+    } on MissingPluginException {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _savedCredentials = updatedCredentials;
+    });
+  }
+
+  void _applySavedCredential(_SavedCredential credential) {
+    _emailController.text = credential.email;
+    _passwordController.text = credential.password;
+    setState(() {
+      _errorMessage = null;
+    });
+  }
+
+  bool _hasSavedCredential({
+    required String email,
+    required String password,
+  }) {
+    final normalizedEmail = email.trim().toLowerCase();
+    return _savedCredentials.any(
+      (credential) =>
+          credential.email == normalizedEmail &&
+          credential.password == password,
+    );
+  }
+
+  Future<void> _promptToSaveCredential({
+    required String email,
+    required String password,
+  }) async {
+    if (_hasSavedCredential(email: email, password: password) || !mounted) {
+      return;
+    }
+
+    final shouldSave =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Save password?'),
+              content: Text(
+                'Save login for ${email.trim().toLowerCase()} on this device?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Not now'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!shouldSave) {
+      return;
+    }
+
+    await _saveCredential(email: email, password: password);
+  }
+
   Future<void> _handleLogin() async {
     FocusScope.of(context).unfocus();
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
     setState(() {
       _isLoading = true;
@@ -44,9 +198,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final user = await widget.authService.signIn(
-        email: _emailController.text,
-        password: _passwordController.text,
+        email: email,
+        password: password,
       );
+
+      if (!mounted) {
+        return;
+      }
+
+      await _promptToSaveCredential(email: email, password: password);
 
       if (!mounted) {
         return;
@@ -114,9 +274,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: _LoginCard(
                                 emailController: _emailController,
                                 passwordController: _passwordController,
+                                savedCredentials: _savedCredentials,
                                 isLoading: _isLoading,
                                 obscurePassword: _obscurePassword,
                                 errorMessage: _errorMessage,
+                                onSelectSavedCredential: _applySavedCredential,
+                                onRemoveSavedCredential: _removeCredential,
                                 onTogglePassword: () {
                                   setState(() {
                                     _obscurePassword = !_obscurePassword;
@@ -134,9 +297,12 @@ class _LoginScreenState extends State<LoginScreen> {
               : _MobileLoginLayout(
                   emailController: _emailController,
                   passwordController: _passwordController,
+                  savedCredentials: _savedCredentials,
                   isLoading: _isLoading,
                   obscurePassword: _obscurePassword,
                   errorMessage: _errorMessage,
+                  onSelectSavedCredential: _applySavedCredential,
+                  onRemoveSavedCredential: _removeCredential,
                   onTogglePassword: () {
                     setState(() {
                       _obscurePassword = !_obscurePassword;
@@ -200,18 +366,24 @@ class _MobileLoginLayout extends StatelessWidget {
   const _MobileLoginLayout({
     required this.emailController,
     required this.passwordController,
+    required this.savedCredentials,
     required this.isLoading,
     required this.obscurePassword,
     required this.errorMessage,
+    required this.onSelectSavedCredential,
+    required this.onRemoveSavedCredential,
     required this.onTogglePassword,
     required this.onLogin,
   });
 
   final TextEditingController emailController;
   final TextEditingController passwordController;
+  final List<_SavedCredential> savedCredentials;
   final bool isLoading;
   final bool obscurePassword;
   final String? errorMessage;
+  final ValueChanged<_SavedCredential> onSelectSavedCredential;
+  final ValueChanged<String> onRemoveSavedCredential;
   final VoidCallback onTogglePassword;
   final VoidCallback onLogin;
 
@@ -258,9 +430,12 @@ class _MobileLoginLayout extends StatelessWidget {
             _LoginCard(
               emailController: emailController,
               passwordController: passwordController,
+              savedCredentials: savedCredentials,
               isLoading: isLoading,
               obscurePassword: obscurePassword,
               errorMessage: errorMessage,
+              onSelectSavedCredential: onSelectSavedCredential,
+              onRemoveSavedCredential: onRemoveSavedCredential,
               onTogglePassword: onTogglePassword,
               onLogin: onLogin,
             ),
@@ -275,18 +450,24 @@ class _LoginCard extends StatelessWidget {
   const _LoginCard({
     required this.emailController,
     required this.passwordController,
+    required this.savedCredentials,
     required this.isLoading,
     required this.obscurePassword,
     required this.errorMessage,
+    required this.onSelectSavedCredential,
+    required this.onRemoveSavedCredential,
     required this.onTogglePassword,
     required this.onLogin,
   });
 
   final TextEditingController emailController;
   final TextEditingController passwordController;
+  final List<_SavedCredential> savedCredentials;
   final bool isLoading;
   final bool obscurePassword;
   final String? errorMessage;
+  final ValueChanged<_SavedCredential> onSelectSavedCredential;
+  final ValueChanged<String> onRemoveSavedCredential;
   final VoidCallback onTogglePassword;
   final VoidCallback onLogin;
 
@@ -339,6 +520,16 @@ class _LoginCard extends StatelessWidget {
               ),
             ),
           ),
+          if (savedCredentials.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const _FieldLabel('Saved Login'),
+            const SizedBox(height: 8),
+            _SavedCredentialPicker(
+              credentials: savedCredentials,
+              onSelect: onSelectSavedCredential,
+              onRemove: onRemoveSavedCredential,
+            ),
+          ],
           if (errorMessage != null) ...[
             const SizedBox(height: 14),
             _ErrorCard(message: errorMessage!),
@@ -354,6 +545,74 @@ class _LoginCard extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SavedCredentialPicker extends StatelessWidget {
+  const _SavedCredentialPicker({
+    required this.credentials,
+    required this.onSelect,
+    required this.onRemove,
+  });
+
+  final List<_SavedCredential> credentials;
+  final ValueChanged<_SavedCredential> onSelect;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.softBackground,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: credentials.asMap().entries.map((entry) {
+          final index = entry.key;
+          final credential = entry.value;
+          return Column(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 2,
+                ),
+                leading: const Icon(
+                  Icons.key_rounded,
+                  color: AppColors.studentBlue,
+                ),
+                title: Text(
+                  credential.email,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Tap to fill email and password',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                onTap: () => onSelect(credential),
+                trailing: IconButton(
+                  onPressed: () => onRemove(credential.email),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: AppColors.textMuted,
+                  ),
+                  tooltip: 'Remove saved login',
+                ),
+              ),
+              if (index < credentials.length - 1)
+                const Divider(height: 1, color: AppColors.border),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -415,5 +674,24 @@ class _ErrorCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _SavedCredential {
+  const _SavedCredential({required this.email, required this.password});
+
+  factory _SavedCredential.fromStorage(String value) {
+    final decoded = jsonDecode(value) as Map<String, dynamic>;
+    return _SavedCredential(
+      email: (decoded['email'] ?? '').toString(),
+      password: (decoded['password'] ?? '').toString(),
+    );
+  }
+
+  final String email;
+  final String password;
+
+  String toStorage() {
+    return jsonEncode({'email': email, 'password': password});
   }
 }
