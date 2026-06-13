@@ -8,6 +8,8 @@ class AppUser {
     required this.semester,
     required this.accountStatus,
     required this.avatarInitials,
+    required this.faculty,
+    required this.programme,
   });
 
   final String uid;
@@ -18,6 +20,8 @@ class AppUser {
   final String semester;
   final String accountStatus;
   final String avatarInitials;
+  final String faculty;
+  final String programme;
 
   factory AppUser.fromMap(Map<String, dynamic> map) {
     return AppUser(
@@ -29,6 +33,8 @@ class AppUser {
       semester: (map['currentSemester'] ?? map['semester'] ?? '').toString(),
       accountStatus: (map['accountStatus'] ?? 'Active').toString(),
       avatarInitials: (map['avatarInitials'] ?? 'SA').toString(),
+      faculty: (map['faculty'] ?? '').toString(),
+      programme: (map['programme'] ?? '').toString(),
     );
   }
 }

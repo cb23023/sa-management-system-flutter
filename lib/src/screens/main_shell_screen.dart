@@ -517,6 +517,23 @@ class _NoticeCard extends StatelessWidget {
   }
 }
 
+String _formatRole(String role) {
+  switch (role.trim().toLowerCase()) {
+    case 'student':
+      return 'Student';
+    case 'lecturer':
+      return 'Lecturer';
+    case 'faculty_registrar':
+      return 'Faculty Registrar';
+    case 'pusat_adab':
+      return 'Pusat Adab';
+    case 'treasury':
+      return 'Treasury';
+    default:
+      return role.replaceAll('_', ' ').split(' ').map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}').join(' ');
+  }
+}
+
 Widget? _noticeDestination(Map<String, dynamic> data, AppUser user) {
   final module = (data['module'] ?? '').toString().toLowerCase().trim();
   switch (module) {
@@ -652,7 +669,11 @@ class _ProfileDetailCard extends StatelessWidget {
           Container(
             height: 58,
             decoration: BoxDecoration(
-              color: const Color(0xFFF9EEDA),
+              gradient: const LinearGradient(
+                colors: [AppColors.darkSurface, AppColors.studentBlue, AppColors.treasuryTeal],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
               borderRadius: BorderRadius.circular(16),
             ),
           ),
@@ -709,24 +730,24 @@ class _ProfileDetailCard extends StatelessWidget {
           ),
           _ProfileInfoRow(
             label: 'Role',
-            value: user.role.replaceAll('_', ' '),
+            value: _formatRole(user.role),
             icon: Icons.work_outline_rounded,
+          ),
+          _ProfileInfoRow(
+            label: 'Faculty',
+            value: user.faculty.isEmpty ? 'Not set' : user.faculty,
+            icon: Icons.account_balance_outlined,
+          ),
+          _ProfileInfoRow(
+            label: 'Programme',
+            value: user.programme.isEmpty ? 'Not set' : user.programme,
+            icon: Icons.school_outlined,
           ),
           _ProfileInfoRow(
             label: 'Status',
             value: user.accountStatus,
             icon: Icons.verified_user_outlined,
             pill: true,
-          ),
-          _ProfileInfoRow(
-            label: 'Initials',
-            value: user.avatarInitials,
-            icon: Icons.person_outline_rounded,
-          ),
-          _ProfileInfoRow(
-            label: 'UID',
-            value: user.uid.isEmpty ? 'Not set' : user.uid,
-            icon: Icons.fingerprint_rounded,
             isLast: true,
           ),
         ],
