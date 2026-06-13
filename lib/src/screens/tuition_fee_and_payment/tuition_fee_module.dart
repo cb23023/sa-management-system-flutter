@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 // This file is a module navigation wrapper, not a functional screen listed in the SDD.
 import '../../models/app_user.dart';
 import '../../theme/app_colors.dart';
-import '../module_shell_screen.dart';
-import 'screens/access_control.dart';
-import 'screens/notification.dart';
-import 'screens/receipt.dart';
-import 'screens/student_dashboard.dart';
-import 'screens/transaction.dart';
-import 'screens/treasury_dashboard.dart';
-import 'screens/tuition_fee.dart';
-import 'screens/verify_payment.dart';
+import '../../modules/module_shell_screen.dart';
+import 'access_control.dart';
+import 'notification.dart';
+import 'receipt.dart';
+import 'student_dashboard.dart';
+import 'transaction.dart';
+import 'treasury_dashboard.dart';
+import 'tuition_fee.dart';
+import 'verify_payment.dart';
 
 class TuitionFeeModule extends StatelessWidget {
   const TuitionFeeModule({super.key, this.user});

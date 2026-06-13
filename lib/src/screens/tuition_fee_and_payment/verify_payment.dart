@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../theme/app_colors.dart';
-import '../controllers/notification_controller.dart';
-import '../models/payment_transactions.dart';
+import '../../theme/app_colors.dart';
+import '../../controllers/tuition_fee_and_payment/notification_controller.dart';
+import '../../models/tuition_fee_and_payment/payment_transactions.dart';
 
 class VerifyPayment extends StatefulWidget {
   const VerifyPayment({super.key});
@@ -146,7 +146,6 @@ class _VerifyPaymentState extends State<VerifyPayment> {
           children: [
             const _SectionHeader(title: 'Verify Payment'),
             const SizedBox(height: 16),
-            // Search bar
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -197,7 +196,6 @@ class _VerifyPaymentState extends State<VerifyPayment> {
               ),
             ),
             const SizedBox(height: 16),
-            // Pending payments list
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -608,4 +606,3 @@ class _LoadingPlaceholder extends StatelessWidget {
     );
   }
 }
-

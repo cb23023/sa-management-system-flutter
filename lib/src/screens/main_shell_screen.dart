@@ -6,7 +6,7 @@ import '../models/app_user.dart';
 import '../modules/attendance/attendance_screen.dart';
 import 'co_curriculum_activity_and_credit_claim/co_curriculum_module_page.dart';
 import '../modules/open_registration_and_subject_registration/open_registration_and_subject_registration_screen.dart';
-import '../modules/tuition_fee_and_payment/tuition_fee_module.dart';
+import 'tuition_fee_and_payment/tuition_fee_module.dart';
 import '../services/seed_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_bottom_nav.dart';

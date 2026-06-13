@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../../../theme/app_colors.dart';
+import '../../theme/app_colors.dart';
 
 class TuitionNotification {
   const TuitionNotification({

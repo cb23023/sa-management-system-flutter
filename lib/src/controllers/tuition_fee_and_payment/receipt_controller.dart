@@ -3,7 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
-import '../models/payment_transactions.dart';
+import '../../models/tuition_fee_and_payment/payment_transactions.dart';
 
 class ReceiptController {
   ReceiptController({FirebaseFirestore? firestore})

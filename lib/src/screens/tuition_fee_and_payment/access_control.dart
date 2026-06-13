@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../theme/app_colors.dart';
-import '../controllers/notification_controller.dart';
-import '../models/tuition_fees.dart';
+import '../../theme/app_colors.dart';
+import '../../controllers/tuition_fee_and_payment/notification_controller.dart';
+import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 
 class AccessControl extends StatefulWidget {
   const AccessControl({super.key});
@@ -239,7 +239,6 @@ class _AccessControlState
                 ),
               ),
               const SizedBox(height: 18),
-              // Search
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(

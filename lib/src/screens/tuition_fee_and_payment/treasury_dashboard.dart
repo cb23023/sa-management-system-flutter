@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/app_colors.dart';
-import '../controllers/notification_controller.dart';
-import '../models/payment_transactions.dart';
-import '../models/tuition_fees.dart';
+import '../../theme/app_colors.dart';
+import '../../controllers/tuition_fee_and_payment/notification_controller.dart';
+import '../../models/tuition_fee_and_payment/payment_transactions.dart';
+import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 
 class TreasuryDashboard extends StatelessWidget {
   const TreasuryDashboard({super.key});
@@ -244,4 +244,3 @@ class _StudentStatusCard extends StatelessWidget {
     );
   }
 }
-

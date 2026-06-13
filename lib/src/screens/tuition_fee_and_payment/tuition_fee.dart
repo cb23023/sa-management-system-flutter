@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../models/app_user.dart';
-import '../../../theme/app_colors.dart';
-import '../controllers/payment_controller.dart';
-import '../models/tuition_fees.dart';
+import '../../models/app_user.dart';
+import '../../theme/app_colors.dart';
+import '../../controllers/tuition_fee_and_payment/payment_controller.dart';
+import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 import 'payment_form.dart';
 
 class TuitionFee extends StatelessWidget {
@@ -253,5 +253,4 @@ class _LoadingPlaceholder extends StatelessWidget {
     );
   }
 }
-
 

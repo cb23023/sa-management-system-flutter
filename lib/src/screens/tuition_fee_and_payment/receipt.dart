@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../models/app_user.dart';
-import '../../../theme/app_colors.dart';
-import '../controllers/receipt_controller.dart';
-import '../models/payment_transactions.dart';
+import '../../models/app_user.dart';
+import '../../theme/app_colors.dart';
+import '../../controllers/tuition_fee_and_payment/receipt_controller.dart';
+import '../../models/tuition_fee_and_payment/payment_transactions.dart';
 
 class Receipt extends StatefulWidget {
   const Receipt({super.key, this.user});

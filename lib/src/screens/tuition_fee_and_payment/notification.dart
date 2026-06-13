@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../models/app_user.dart';
-import '../../../theme/app_colors.dart';
-import '../controllers/notification_controller.dart';
-import '../models/notification.dart';
+import '../../models/app_user.dart';
+import '../../theme/app_colors.dart';
+import '../../controllers/tuition_fee_and_payment/notification_controller.dart';
+import '../../models/tuition_fee_and_payment/notification.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key, this.user});

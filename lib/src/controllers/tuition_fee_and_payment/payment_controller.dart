@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../../models/app_user.dart';
-import '../models/tuition_fees.dart';
+import '../../models/app_user.dart';
+import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 
 class PaymentController {
   PaymentController({FirebaseFirestore? firestore})

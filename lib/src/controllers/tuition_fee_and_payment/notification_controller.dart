@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../models/notification.dart';
-import '../models/payment_transactions.dart';
-import '../models/tuition_fees.dart';
+import '../../models/tuition_fee_and_payment/notification.dart';
+import '../../models/tuition_fee_and_payment/payment_transactions.dart';
+import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 
 class NotificationController {
   NotificationController({FirebaseFirestore? firestore})
