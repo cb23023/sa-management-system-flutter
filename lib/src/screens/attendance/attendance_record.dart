@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../models/app_user.dart';
 import '../../controllers/attendance/attendance_controller.dart';
 import '../../models/attendance/attendance_record_model.dart';
-import '../../widgets/attendance/attendance_widgets.dart';
+import '../../widgets/attendance_widgets.dart';
 
 class AttendanceRecordScreen extends StatefulWidget {
   const AttendanceRecordScreen({required this.currentUser, super.key});
@@ -166,3 +166,4 @@ class _AttendanceRecordScreenState extends State<AttendanceRecordScreen> {
     );
   }
 }
+

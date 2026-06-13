@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../theme/app_colors.dart';
@@ -7,9 +7,9 @@ import '../../controllers/attendance/attendance_controller.dart';
 import '../../controllers/attendance/location_controller.dart';
 import '../../models/attendance/attendance_session_model.dart';
 import '../../services/attendance/qr_service.dart';
-import '../../widgets/attendance/attendance_widgets.dart';
+import '../../widgets/attendance_widgets.dart';
 
-// ── Lecturer: manage sessions & QR ───────────────────────────────────────────
+// â”€â”€ Lecturer: manage sessions & QR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class AttendanceManagementScreen extends StatefulWidget {
   const AttendanceManagementScreen({required this.currentUser, super.key});
@@ -332,7 +332,7 @@ class _AttendanceManagementScreenState
   }
 }
 
-// ── Student: check in ─────────────────────────────────────────────────────────
+// â”€â”€ Student: check in â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _AttendanceOptionLabel extends StatelessWidget {
   const _AttendanceOptionLabel({
@@ -740,7 +740,7 @@ class _StudentCheckInScreenState extends State<StudentCheckInScreen> {
   }
 }
 
-// ── QR scanner page ───────────────────────────────────────────────────────────
+// â”€â”€ QR scanner page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class StudentQrScannerPage extends StatefulWidget {
   const StudentQrScannerPage({super.key});
@@ -805,3 +805,4 @@ class _StudentQrScannerPageState extends State<StudentQrScannerPage> {
     );
   }
 }
+

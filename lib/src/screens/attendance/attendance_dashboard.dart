@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../models/attendance/attendance_record_model.dart';
 import '../../services/attendance/api_service.dart';
-import '../../widgets/attendance/attendance_widgets.dart';
+import '../../widgets/attendance_widgets.dart';
 
 String _moduleName(AttendanceRecordData record, PusatAdabDataBundle bundle) {
   if (record.activityId.isNotEmpty &&
@@ -92,7 +92,7 @@ List<PusatAdabModuleSummary> buildModuleSummaries(
     });
 }
 
-// ── Dashboard overview tab ────────────────────────────────────────────────────
+// â”€â”€ Dashboard overview tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class AttendanceDashboardScreen extends StatelessWidget {
   const AttendanceDashboardScreen({super.key});
@@ -164,7 +164,7 @@ class AttendanceDashboardScreen extends StatelessWidget {
   }
 }
 
-// ── Records tab ───────────────────────────────────────────────────────────────
+// â”€â”€ Records tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class PusatAdabRecordScreen extends StatefulWidget {
   const PusatAdabRecordScreen({super.key});
@@ -474,3 +474,4 @@ class _ModuleDetailPage extends StatelessWidget {
     );
   }
 }
+

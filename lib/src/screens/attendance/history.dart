@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../models/app_user.dart';
 import '../../theme/app_colors.dart';
 import '../../controllers/attendance/attendance_controller.dart';
 import '../../models/attendance/attendance_record_model.dart';
-import '../../widgets/attendance/attendance_widgets.dart';
+import '../../widgets/attendance_widgets.dart';
 
 class AttendanceHistoryScreen extends StatelessWidget {
   const AttendanceHistoryScreen({required this.currentUser, super.key});
@@ -69,3 +69,4 @@ class AttendanceHistoryScreen extends StatelessWidget {
     );
   }
 }
+
