@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/app_user.dart';
 import '../modules/attendance/attendance_screen.dart';
 import '../modules/co_curriculum_activity_and_credit_claim/co_curriculum_activity_and_credit_claim_screen.dart';
-import '../modules/open_registration_and_subject_registration/open_registration_and_subject_registration_screen.dart';
+import 'open_registration_and_subject_registration/open_registration_module.dart';
 import '../modules/tuition_fee_and_payment/tuition_fee_and_payment_screen.dart';
 import '../services/seed_service.dart';
 import '../theme/app_colors.dart';
@@ -78,7 +78,7 @@ class _HomeTab extends StatelessWidget {
           enabled: true,
           icon: Icons.menu_book_rounded,
         ),
-        const OpenRegistrationAndSubjectRegistrationScreen(),
+        OpenRegistrationAndSubjectRegistrationScreen(user: user),
       ),
       (
         const ModuleCardData(
@@ -260,6 +260,27 @@ class _SettingsTabState extends State<_SettingsTab> {
     }
   }
 
+  Future<void> _seedAllSubjects() async {
+    setState(() => _isSeeding = true);
+
+    try {
+      final subjectCount = await _seedService.seedSubjectsOnly();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Subjects seeded: $subjectCount documents updated.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Subject seed failed: $error')));
+    } finally {
+      if (mounted) setState(() => _isSeeding = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return _DashboardPage(
@@ -290,6 +311,16 @@ class _SettingsTabState extends State<_SettingsTab> {
           ),
           label: Text(
             _isSeeding ? 'Seeding Firestore...' : 'Seed Firestore Data',
+          ),
+        ),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(
+          onPressed: _isSeeding ? null : _seedAllSubjects,
+          icon: Icon(
+            _isSeeding ? Icons.hourglass_top_rounded : Icons.book_rounded,
+          ),
+          label: Text(
+            _isSeeding ? 'Seeding Subjects...' : 'Seed All Subjects (42)',
           ),
         ),
         const SizedBox(height: 12),

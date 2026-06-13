@@ -9,3 +9,17 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const SaManagementSystemApp());
 }
+
+// ============================================================================
+// REFACTORING IN PROGRESS:
+// This app is undergoing a structural refactoring from monolithic to 
+// feature-based architecture. See REFACTORING_SUMMARY.md for details.
+//
+// New structure:
+// - core/: App-wide utilities (theme, constants, services, widgets)
+// - features/: Feature modules (auth, home, open_registration, etc.)
+// - shared/: Shared components across features
+// - scripts/: Utility scripts
+//
+// OLD CODE in src/ continues to work during migration.
+// ============================================================================

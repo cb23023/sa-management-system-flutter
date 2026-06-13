@@ -7,11 +7,13 @@ class ModuleTabItem {
     required this.label,
     required this.icon,
     required this.content,
+    this.description = '',
   });
 
   final String label;
   final IconData icon;
   final Widget content;
+  final String description;
 }
 
 class ModuleShellScreen extends StatefulWidget {
@@ -143,7 +145,9 @@ class _ModuleShellScreenState extends State<ModuleShellScreen> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  widget.subtitle,
+                                  currentTab.description.isNotEmpty
+                                      ? currentTab.description
+                                      : widget.subtitle,
                                   style: const TextStyle(
                                     fontSize: 13,
                                     color: AppColors.textMuted,
