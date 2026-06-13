@@ -45,36 +45,64 @@ class TreasuryDashboard extends StatelessWidget {
 
             pending = underReview.length;
 
+            final metrics = [
+              _MetricCardData(
+                label: 'Paid',
+                value: '$paid',
+                color: AppColors.success,
+                background: AppColors.greenSoft,
+              ),
+              _MetricCardData(
+                label: 'Unpaid',
+                value: '$unpaid',
+                color: AppColors.danger,
+                background: AppColors.coralSoft,
+              ),
+              _MetricCardData(
+                label: 'Pending Verify',
+                value: '$pending',
+                color: AppColors.warning,
+                background: AppColors.warningSoft,
+              ),
+              _MetricCardData(
+                label: 'Blocked',
+                value: '$blocked',
+                color: AppColors.treasuryTeal,
+                background: AppColors.tealSoft,
+              ),
+            ];
+
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const _SectionHeader(title: 'Treasury Dashboard'),
                 const SizedBox(height: 16),
-                Wrap(
-                  spacing: 14,
-                  runSpacing: 14,
-                  children: [
-                    _MetricCard(
-                        label: 'Paid',
-                        value: '$paid',
-                        color: AppColors.success,
-                        background: AppColors.greenSoft),
-                    _MetricCard(
-                        label: 'Unpaid',
-                        value: '$unpaid',
-                        color: AppColors.danger,
-                        background: AppColors.coralSoft),
-                    _MetricCard(
-                        label: 'Pending verify',
-                        value: '$pending',
-                        color: AppColors.warning,
-                        background: AppColors.warningSoft),
-                    _MetricCard(
-                        label: 'Blocked',
-                        value: '$blocked',
-                        color: AppColors.treasuryTeal,
-                        background: AppColors.tealSoft),
-                  ],
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final crossAxisCount =
+                            constraints.maxWidth >= 420 ? 2 : 1;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: metrics.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 14,
+                            mainAxisExtent: 118,
+                          ),
+                          itemBuilder: (context, index) {
+                            final metric = metrics[index];
+                            return _MetricCard(data: metric);
+                          },
+                        );
+                      },
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 const Text('Students under review',
@@ -129,8 +157,8 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
+class _MetricCardData {
+  const _MetricCardData({
     required this.label,
     required this.value,
     required this.color,
@@ -141,30 +169,45 @@ class _MetricCard extends StatelessWidget {
   final String value;
   final Color color;
   final Color background;
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({required this.data});
+
+  final _MetricCardData data;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 156,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: background,
+        color: data.background,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(label,
-              style: TextStyle(
-                  color: color.withValues(alpha: 0.85),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700)),
-          const SizedBox(height: 14),
-          Text(value,
-              style: TextStyle(
-                  color: color,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800)),
+          Text(
+            data.label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: data.color.withValues(alpha: 0.85),
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            data.value,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: data.color,
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );
