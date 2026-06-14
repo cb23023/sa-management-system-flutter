@@ -1,5 +1,19 @@
+// =============================================================================
+// SAMMS-PACK-202 | dashboard.dart
+// Class Type    : Screen
+// Responsibility: Displays the dashboard overview based on the selected
+//   Co-Curriculum user role. Shows student progress, Pusat Adab activity and
+//   claim summary, or lecturer supervised activity and grading summary.
+// Attributes   : role (CoCurriculumRole), userName (String), userUid (String),
+//                studentUid (String), lecturerUid (String)
+// Methods      : build (router), _StudentDashboard.build,
+//                _PusatAdabDashboard.build, _LecturerDashboard.build
+// =============================================================================
+
 part of 'co_curriculum_module_page.dart';
 
+// _Dashboard — role router widget. Delegates to the correct dashboard class
+// depending on the current CoCurriculumRole.
 class _Dashboard extends StatelessWidget {
   const _Dashboard({
     required this.role,
@@ -12,6 +26,10 @@ class _Dashboard extends StatelessWidget {
   final String userUid;
 
   @override
+  // build — checks the current role and returns the matching dashboard widget.
+  //   student   → _StudentDashboard
+  //   pusatAdab → _PusatAdabDashboard
+  //   lecturer  → _LecturerDashboard
   Widget build(BuildContext context) {
     switch (role) {
       case CoCurriculumRole.student:
@@ -24,6 +42,10 @@ class _Dashboard extends StatelessWidget {
   }
 }
 
+// _StudentDashboard — shows the student's profile card, activity overview
+// metrics (hours, CATS, joined count, latest claim status), and a claim
+// readiness status card. Reads live registration and attendance data from
+// Firestore to compute completed count, total hours, and total CATS.
 class _StudentDashboard extends StatelessWidget {
   const _StudentDashboard({required this.userName, required this.studentUid});
 
@@ -168,6 +190,9 @@ class _StudentDashboard extends StatelessWidget {
   }
 }
 
+// _PusatAdabDashboard — shows the Pusat Adab profile card and a static
+// overview summary (active activities and pending reviews). Uses fixed values
+// as no real-time aggregation is required for this role's overview.
 class _PusatAdabDashboard extends StatelessWidget {
   const _PusatAdabDashboard({required this.userName});
 
@@ -218,6 +243,9 @@ class _PusatAdabDashboard extends StatelessWidget {
   }
 }
 
+// _LecturerDashboard — shows the lecturer profile card and an overview of
+// supervised activities and graded records. Queries activities by
+// supervisorLecturerId and counts registrations with totalMarks > 0.
 class _LecturerDashboard extends StatelessWidget {
   const _LecturerDashboard({required this.userName, required this.lecturerUid});
 

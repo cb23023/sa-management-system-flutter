@@ -1,5 +1,24 @@
+// =============================================================================
+// SAMMS-PACK-209 | claim_controller.dart
+// Class Type    : Controller
+// Responsibility: Manages all Firestore operations for Co-Curriculum credit
+//   claims and related notifications. Handles claim submission with validation,
+//   Pusat Adab review (approve/reject), building review records for the UI, and
+//   sending notifications to students and Pusat Adab staff.
+// Attributes   : firestore (FirebaseFirestore), creditClaims, activities,
+//                activityRegistrations, attendanceRecords,
+//                notifications, users (CollectionReference)
+// Methods      : getStudentClaims, getPendingClaims, getClaimById,
+//                validateClaimActivities, submitClaim, approveClaim, rejectClaim,
+//                _buildClaimRecords, createNotification,
+//                notifyPusatAdabClaimSubmitted, notifyStudentClaimReviewed, batch
+// =============================================================================
+
 part of '../../screens/co_curriculum_activity_and_credit_claim/co_curriculum_module_page.dart';
 
+// ClaimController — Firestore controller for Co-Curriculum credit claims and
+// notifications. Instantiated once as _claimController and shared across all
+// screens in this library.
 class ClaimController {
   ClaimController({FirebaseFirestore? firestore})
     : firestore = firestore ?? FirebaseFirestore.instance;
@@ -24,6 +43,8 @@ class ClaimController {
   CollectionReference<Map<String, dynamic>> get users =>
       firestore.collection('users');
 
+  // getStudentClaims — returns all credit_claims for a student ordered by
+  //   submittedAt descending.
   Future<QuerySnapshot<Map<String, dynamic>>> getStudentClaims(
     String studentUid,
   ) {
@@ -33,10 +54,14 @@ class ClaimController {
         .get();
   }
 
+  // getPendingClaims — returns all credit_claims with claimStatus == 'pending';
+  //   used by the Pusat Adab review tab.
   Future<QuerySnapshot<Map<String, dynamic>>> getPendingClaims() {
     return creditClaims.where('claimStatus', isEqualTo: 'pending').get();
   }
 
+  // getClaimById — fetches a single credit_claims document by ID.
+  //   Returns null if the document does not exist.
   Future<DocumentSnapshot<Map<String, dynamic>>?> getClaimById(
     String claimId,
   ) async {
@@ -44,6 +69,12 @@ class ClaimController {
     return doc.exists ? doc : null;
   }
 
+  // validateClaimActivities — ensures exactly four activity IDs are provided.
+  //   For each ID, confirms a completed registration, present attendance, and
+  //   marks > 0 exist. Computes totalMarks, averageMark, totalHours, totalCats,
+  //   and allModulesPassed (all marks >= 40). Returns {success, message,
+  //   selectedActivities, totalMarks, averageMark, totalHours, totalCats,
+  //   allModulesPassed}.
   Future<Map<String, dynamic>> validateClaimActivities(
     String studentUid,
     List<String> activityIds,
@@ -152,6 +183,9 @@ class ClaimController {
     };
   }
 
+  // submitClaim — calls validateClaimActivities; if valid, writes the claim
+  //   document to credit_claims with status 'pending', then calls
+  //   notifyPusatAdabClaimSubmitted. Returns {success, message, claimId}.
   Future<Map<String, dynamic>> submitClaim(
     Map<String, dynamic> claimData,
   ) async {
@@ -220,6 +254,10 @@ class ClaimController {
     };
   }
 
+  // approveClaim — verifies that allModulesPassed and attendanceValidated are
+  //   true on the claim, then sets claimStatus to 'approved', records reviewedBy
+  //   and reviewedAt, and calls notifyStudentClaimReviewed.
+  //   Returns {success, message}.
   Future<Map<String, dynamic>> approveClaim(
     String claimId,
     String reviewerId,
@@ -265,6 +303,9 @@ class ClaimController {
     return {'success': true, 'message': 'Claim marked as approved.'};
   }
 
+  // rejectClaim — requires a non-empty rejectionReason. Sets claimStatus to
+  //   'rejected', records reviewedBy, reviewedAt, and rejectionReason, then
+  //   calls notifyStudentClaimReviewed. Returns {success, message}.
   Future<Map<String, dynamic>> rejectClaim(
     String claimId,
     String reviewerId,
@@ -309,6 +350,11 @@ class ClaimController {
     return {'success': true, 'message': 'Claim marked as rejected.'};
   }
 
+  // _buildClaimRecords — resolves full review records for a list of claim docs.
+  //   Fetches users, activities, and registrations in parallel, maps each claim
+  //   to a _ReviewClaimRecord with student name, matricId, activity titles,
+  //   marks, hours, CATS, and status. Groups by studentId keeping the highest-
+  //   priority status (pending > approved > rejected) or the latest submission.
   Future<List<_ReviewClaimRecord>> _buildClaimRecords(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) async {
@@ -487,6 +533,9 @@ class ClaimController {
     return grouped.values.toList();
   }
 
+  // createNotification — writes a notification document to the notifications
+  //   collection. Automatically sets module = 'module2', isRead = false, and
+  //   createdAt server timestamp if not already provided.
   Future<Map<String, dynamic>> createNotification(
     Map<String, dynamic> notificationData,
   ) async {
@@ -503,6 +552,9 @@ class ClaimController {
     return {'success': true, 'message': 'Notification created.'};
   }
 
+  // notifyPusatAdabClaimSubmitted — looks up the student's display name and
+  //   matricId, finds all Pusat Adab users, and creates a notification for each
+  //   with the claim ID as actionLink.
   Future<void> notifyPusatAdabClaimSubmitted({
     required String claimId,
     required String studentId,
@@ -551,6 +603,9 @@ class ClaimController {
     }
   }
 
+  // notifyStudentClaimReviewed — creates a notification for the student
+  //   indicating whether the claim was approved or rejected. Includes the
+  //   rejection reason in the message when isApproved is false.
   Future<void> notifyStudentClaimReviewed({
     required String claimId,
     required String studentId,
@@ -575,6 +630,7 @@ class ClaimController {
     });
   }
 
+  // batch — returns a new Firestore WriteBatch for atomic multi-document writes.
   WriteBatch batch() => firestore.batch();
 }
 

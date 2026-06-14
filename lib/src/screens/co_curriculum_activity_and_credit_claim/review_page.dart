@@ -1,5 +1,22 @@
+// =============================================================================
+// SAMMS-PACK-205 | review_page.dart
+// Class Type    : Screen
+// Responsibility: Displays submitted student credit claims for Pusat Adab
+//   review. Allows staff to search, filter, view claim details, approve valid
+//   claims, reject claims with a reason, and notify students after decision.
+// Attributes   : claimId, sourceClaimIds, studentId, studentName, matricId,
+//                activityTitles, activityIds, activityItems, claimStatus,
+//                submittedAt, totalHours, totalCats, averageMark,
+//                allModulesPassed, attendanceStatus, claimNotes,
+//                rejectionReason, _searchController, _claimStatusFilter,
+//                _dateFilter, _rejectionReasonController, _saving
+// Methods      : build, _loadRecord, _openClaimReview, _matchesDateFilter,
+//                Claim Review Decision (inline in _ClaimReviewPageState.build)
+// =============================================================================
+
 part of 'co_curriculum_module_page.dart';
 
+// _ReviewPage — thin wrapper that renders _PusatAdabClaimsTab.
 class _ReviewPage extends StatelessWidget {
   const _ReviewPage();
 
@@ -9,6 +26,8 @@ class _ReviewPage extends StatelessWidget {
   }
 }
 
+// _ReviewClaimRecord — immutable data class holding all fields required to
+// render a claim card in the Pusat Adab review list and the review detail page.
 class _ReviewClaimRecord {
   const _ReviewClaimRecord({
     required this.claimId,
@@ -49,6 +68,9 @@ class _ReviewClaimRecord {
   final String rejectionReason;
 }
 
+// _PusatAdabClaimsTab — main review list for Pusat Adab. Streams all claims
+// from Firestore, builds review records via ClaimController._buildClaimRecords,
+// and renders filterable claim cards with Approve / Reject actions.
 class _PusatAdabClaimsTab extends StatefulWidget {
   const _PusatAdabClaimsTab();
 
@@ -56,11 +78,15 @@ class _PusatAdabClaimsTab extends StatefulWidget {
   State<_PusatAdabClaimsTab> createState() => _PusatAdabClaimsTabState();
 }
 
+// _ClaimReviewLoaderPage — loads a single claim record from Firestore by ID
+// (used when opening from a notification), then forwards to _ClaimReviewPage.
 class _ClaimReviewLoaderPage extends StatelessWidget {
   const _ClaimReviewLoaderPage({required this.claimId});
 
   final String claimId;
 
+  // _loadRecord — queries Firestore for the claim document by claimId, calls
+  // ClaimController._buildClaimRecords, and returns the first record or null.
   Future<_ReviewClaimRecord?> _loadRecord() async {
     final snapshot = await _claimController.creditClaims
         .where(FieldPath.documentId, isEqualTo: claimId)
@@ -135,6 +161,9 @@ class _PusatAdabClaimsTabState extends State<_PusatAdabClaimsTab> {
     super.dispose();
   }
 
+  // _openClaimReview — navigates to _ClaimReviewPage passing the full record
+  // data. For Reject it injects guidance text as claimNotes; for Approve it
+  // preserves the existing notes.
   void _openClaimReview(
     BuildContext context,
     _ReviewClaimRecord record,
@@ -164,6 +193,8 @@ class _PusatAdabClaimsTabState extends State<_PusatAdabClaimsTab> {
     );
   }
 
+  // _matchesDateFilter — returns true if the claim's submitted date falls
+  // within the selected date range filter (All, Today, This month, This year).
   bool _matchesDateFilter(DateTime? value) {
     if (_dateFilter == 'All dates' || value == null) {
       return true;
@@ -417,6 +448,9 @@ class _PusatAdabClaimsTabState extends State<_PusatAdabClaimsTab> {
   }
 }
 
+// _ClaimReviewPage — detail page where Pusat Adab confirms an approval or
+// submits a rejection reason. Validates allModulesPassed and attendanceStatus
+// before approving. Calls ClaimController.approveClaim or rejectClaim.
 class _ClaimReviewPage extends StatefulWidget {
   const _ClaimReviewPage({
     required this.claimId,
@@ -767,6 +801,8 @@ class _ClaimReviewPageState extends State<_ClaimReviewPage> {
   }
 }
 
+// _FormFieldCard — read-only labelled display card used in the claim review
+// page to show reviewer remarks in a styled container.
 class _FormFieldCard extends StatelessWidget {
   const _FormFieldCard({
     required this.label,
@@ -814,6 +850,8 @@ class _FormFieldCard extends StatelessWidget {
   }
 }
 
+// _SubmitBar — two-button row (primary action + secondary/back) used in
+// the claim review page and activity form page.
 class _SubmitBar extends StatelessWidget {
   const _SubmitBar({
     required this.primaryLabel,
@@ -855,6 +893,8 @@ class _SubmitBar extends StatelessWidget {
   }
 }
 
+// _StatusBadge — pill-shaped badge with coloured background used throughout
+// the module to indicate status (Pending, Approved, Rejected, Active, etc.).
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({
     required this.label,

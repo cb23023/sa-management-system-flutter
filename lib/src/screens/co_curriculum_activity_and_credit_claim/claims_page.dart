@@ -1,5 +1,20 @@
+// =============================================================================
+// SAMMS-PACK-204 | claims_page.dart
+// Class Type    : Screen
+// Responsibility: Allows students to select exactly four eligible completed
+//   co-curriculum activities and submit a credit claim for Pusat Adab review.
+//   Also displays claim summary, claim status lock, claim history, and claim
+//   result details.
+// Attributes   : studentUid, claimId, _selectedActivityIds, _submitting,
+//                eligibleActivities, selectedActivities, hasLockedClaim,
+//                selectedTotalMarks, selectedAverageMark, selectedTotalHours,
+//                selectedTotalCats
+// Methods      : build, _submitClaim, _ClaimResultPage.build
+// =============================================================================
+
 part of 'co_curriculum_module_page.dart';
 
+// _ClaimsPage — thin wrapper that renders _StudentClaimsTab for the given studentUid.
 class _ClaimsPage extends StatelessWidget {
   const _ClaimsPage({required this.studentUid});
 
@@ -11,6 +26,10 @@ class _ClaimsPage extends StatelessWidget {
   }
 }
 
+// _StudentClaimsTab — main claim preparation UI. Loads eligible activities
+// (completed + present attendance + marks > 0), lets the student select up to
+// 4, shows a running summary, and unlocks the submit button only when exactly
+// 4 are selected and no pending/approved claim exists.
 class _StudentClaimsTab extends StatefulWidget {
   const _StudentClaimsTab({required this.studentUid});
 
@@ -20,6 +39,9 @@ class _StudentClaimsTab extends StatefulWidget {
   State<_StudentClaimsTab> createState() => _StudentClaimsTabState();
 }
 
+// _ClaimResultPage — full-screen page that displays the review outcome of a
+// submitted claim (status, reviewed date, remarks, and rejection reason).
+// Navigated to when a student taps a claim notification.
 class _ClaimResultPage extends StatelessWidget {
   const _ClaimResultPage({required this.claimId});
 
@@ -116,6 +138,9 @@ class _StudentClaimsTabState extends State<_StudentClaimsTab> {
   final Set<String> _selectedActivityIds = <String>{};
   bool _submitting = false;
 
+  // _submitClaim — validates the selection (exactly 4, all completed, all
+  // present, all have marks), asks for confirmation, then calls
+  // ClaimController.submitClaim(). Clears selection and shows result SnackBar.
   Future<void> _submitClaim(
     BuildContext context,
     List<Map<String, dynamic>> eligibleActivities,

@@ -1,5 +1,16 @@
+// =============================================================================
+// shared_models_and_utils.dart
+// Responsibility: Defines the _ActivityOption data model with its preset list,
+//   and provides utility functions used across all screens in the Co-Curriculum
+//   module: date/time formatting and parsing, notification display helpers,
+//   attendance helpers, safe string utilities, and form validators.
+// =============================================================================
+
 part of 'co_curriculum_module_page.dart';
 
+// _ActivityOption — immutable data class representing a preset co-curriculum
+// activity template. Stores default venue, lecturer, hours, CATS, and capacity
+// so the create-activity form can pre-fill fields when the user picks a title.
 class _ActivityOption {
   const _ActivityOption({
     required this.title,
@@ -22,6 +33,10 @@ class _ActivityOption {
   final int defaultCapacity;
 }
 
+// _activityOptions — the 20 approved co-curriculum activity presets, grouped
+// into Academic/Skills/Digital, Sports/Physical, Soft Skills/Development,
+// Mental/Health, and Religious/Spiritual categories. Each preset has 8 hours
+// and 2 CATS by default and is used to populate the activity creation form.
 const List<_ActivityOption> _activityOptions = [
   _ActivityOption(
     title: 'Chess',
@@ -245,6 +260,7 @@ const List<_ActivityOption> _activityOptions = [
   ),
 ];
 
+// _displayDate — formats a DateTime as "d Mon YYYY" (e.g. "5 Jun 2025").
 String _displayDate(DateTime date) {
   const months = [
     'Jan',
@@ -263,6 +279,7 @@ String _displayDate(DateTime date) {
   return '${date.day} ${months[date.month - 1]} ${date.year}';
 }
 
+// _formatTime — converts a TimeOfDay to a 12-hour string (e.g. "9:30 AM").
 String _formatTime(TimeOfDay time) {
   final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
   final minute = time.minute.toString().padLeft(2, '0');
@@ -270,6 +287,9 @@ String _formatTime(TimeOfDay time) {
   return '$hour:$minute $suffix';
 }
 
+// _parseStoredDate — parses a date from either the ISO "YYYY-MM-DD" storage
+// format (sessionDate) or the display "d Mon YYYY" format (displayDate).
+// Returns null if neither can be parsed.
 DateTime? _parseStoredDate(String? sessionDate, String? displayDate) {
   if (sessionDate != null && sessionDate.isNotEmpty) {
     final parts = sessionDate.split('-');
@@ -314,6 +334,8 @@ DateTime? _parseStoredDate(String? sessionDate, String? displayDate) {
   return null;
 }
 
+// _parseStoredTime — parses a stored "h:mm AM/PM" string back to a TimeOfDay.
+// Returns null if the string is empty or does not match the expected pattern.
 TimeOfDay? _parseStoredTime(String? value) {
   if (value == null || value.trim().isEmpty) {
     return null;
@@ -338,6 +360,9 @@ TimeOfDay? _parseStoredTime(String? value) {
   return TimeOfDay(hour: hour24, minute: minute);
 }
 
+// _parseDynamicDate — converts an unknown Firestore date value (Timestamp,
+// DateTime, or ISO string) to a DateTime. Returns null for null or unparseable
+// values.
 DateTime? _parseDynamicDate(dynamic value) {
   if (value == null) {
     return null;
@@ -355,6 +380,8 @@ DateTime? _parseDynamicDate(dynamic value) {
   return DateTime.tryParse(text);
 }
 
+// _moduleNotificationTag — returns the short display tag for a notification type
+// ("Success", "Alert", or "Update").
 String _moduleNotificationTag(String type) {
   switch (_safeLower(type)) {
     case 'success':
@@ -367,6 +394,8 @@ String _moduleNotificationTag(String type) {
   }
 }
 
+// _moduleNotificationIcon — returns the appropriate IconData for a notification
+// type: verified for success, error/warning icons for alerts, bell otherwise.
 IconData _moduleNotificationIcon(String type) {
   switch (_safeLower(type)) {
     case 'success':
@@ -380,6 +409,8 @@ IconData _moduleNotificationIcon(String type) {
   }
 }
 
+// _moduleNotificationColor — returns the foreground/icon colour for a
+// notification type (success = green, warning = amber, danger = red, default = blue).
 Color _moduleNotificationColor(String type) {
   switch (_safeLower(type)) {
     case 'success':
@@ -393,6 +424,8 @@ Color _moduleNotificationColor(String type) {
   }
 }
 
+// _moduleNotificationBackground — returns the soft background colour for a
+// notification type container, paired with _moduleNotificationColor.
 Color _moduleNotificationBackground(String type) {
   switch (_safeLower(type)) {
     case 'success':
@@ -406,19 +439,26 @@ Color _moduleNotificationBackground(String type) {
   }
 }
 
+// _attendanceActivityId — extracts the activityId string from an attendance
+// record map, returning an empty string if absent.
 String _attendanceActivityId(Map<String, dynamic> data) {
   return (data['activityId'] ?? '').toString();
 }
 
+// _attendanceStatusText — extracts the raw status string from an attendance
+// record map, returning an empty string if absent.
 String _attendanceStatusText(Map<String, dynamic> data) {
   return (data['status'] ?? '').toString();
 }
 
+// _isAttendancePresent — returns true only if the attendance record's status
+// is exactly "present" (case-insensitive).
 bool _isAttendancePresent(Map<String, dynamic> data) {
   final status = _safeLower(_attendanceStatusText(data));
   return status == 'present';
 }
 
+// _safeLower — null-safe toLowerCase helper; returns '' for null values.
 String _safeLower(dynamic value) {
   if (value == null) {
     return '';
@@ -426,6 +466,8 @@ String _safeLower(dynamic value) {
   return value.toString().toLowerCase();
 }
 
+// _userDisplayName — resolves the best display name from a user data map,
+// trying fullName, name, then email in order. Returns fallback if none found.
 String _userDisplayName(
   Map<String, dynamic>? userData, {
   String fallback = '',
@@ -440,6 +482,8 @@ String _userDisplayName(
       .toString();
 }
 
+// _requiredField — Flutter form validator that returns 'Required' if the value
+// is null or blank, otherwise null (valid).
 String? _requiredField(String? value) {
   if (value == null || value.trim().isEmpty) {
     return 'Required';
@@ -447,6 +491,8 @@ String? _requiredField(String? value) {
   return null;
 }
 
+// _numberField — Flutter form validator that returns 'Required' for blank input
+// or 'Enter number' if the value cannot be parsed as an integer.
 String? _numberField(String? value) {
   if (value == null || value.trim().isEmpty) {
     return 'Required';

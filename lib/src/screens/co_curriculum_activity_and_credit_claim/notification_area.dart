@@ -1,5 +1,22 @@
+// =============================================================================
+// SAMMS-PACK-207 | notification_area.dart
+// Class Type    : Screen
+// Responsibility: Displays module notifications for the current user filtered
+//   to module2. Automatically marks all unread notifications as read via a
+//   Firestore batch write when the tab is opened. Tapping a notification routes
+//   the user to the relevant target (claim result, claim review, or Activities
+//   tab) based on the actionLink, notification content, and current role.
+// Attributes   : userUid (String), role (CoCurriculumRole), _markingRead (bool)
+// Methods      : build (_NotificationArea, _ModuleNotificationBadge,
+//                  _ModuleNotificationsTabState),
+//                _markModuleNotificationsAsRead, _openNotificationTarget
+// =============================================================================
+
 part of 'co_curriculum_module_page.dart';
 
+// _NotificationArea — thin router widget that delegates to
+// _ModuleNotificationsTab, passing userUid and role for notification filtering
+// and tap-routing.
 class _NotificationArea extends StatelessWidget {
   const _NotificationArea({required this.userUid, required this.role});
 
@@ -12,12 +29,18 @@ class _NotificationArea extends StatelessWidget {
   }
 }
 
+// _ModuleNotificationBadge — streams unread notifications for the current user
+// filtered to module2. Renders a red pill badge showing the count (capped at
+// "9+"); returns SizedBox.shrink when there are no unread notifications.
 class _ModuleNotificationBadge extends StatelessWidget {
   const _ModuleNotificationBadge({required this.userUid});
 
   final String userUid;
 
   @override
+  // build — subscribes to the notifications collection filtered by userId.
+  // Counts documents where module == 'module2' and isRead != true, then
+  // displays the badge or hides it with SizedBox.shrink().
   Widget build(BuildContext context) {
     if (userUid.trim().isEmpty) {
       return const SizedBox.shrink();
@@ -65,6 +88,11 @@ class _ModuleNotificationBadge extends StatelessWidget {
   }
 }
 
+// _ModuleNotificationsTab — scrollable notification list for the module.
+// Streams all notifications for the user, filters to module2, sorts by
+// createdAt descending, and auto-marks unread docs as read via a batch write
+// after the first frame. Each row is tappable and routes to the correct screen
+// using _openNotificationTarget based on the notification type and user role.
 class _ModuleNotificationsTab extends StatefulWidget {
   const _ModuleNotificationsTab({required this.userUid, required this.role});
 
@@ -79,6 +107,9 @@ class _ModuleNotificationsTab extends StatefulWidget {
 class _ModuleNotificationsTabState extends State<_ModuleNotificationsTab> {
   bool _markingRead = false;
 
+  // _markModuleNotificationsAsRead — performs a batched Firestore write to set
+  // isRead: true on every unread notification document. Uses _markingRead to
+  // prevent concurrent calls from overlapping.
   Future<void> _markModuleNotificationsAsRead(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> unreadDocs,
   ) async {
@@ -98,6 +129,10 @@ class _ModuleNotificationsTabState extends State<_ModuleNotificationsTab> {
   }
 
   @override
+  // build — streams notifications for the user filtered to module2. Schedules
+  // a post-frame callback to mark unread docs as read, sorts the list by
+  // createdAt descending, and renders each notification as a tappable card with
+  // an icon, type badge, message, and date pill. Tapping calls _openNotificationTarget.
   Widget build(BuildContext context) {
     if (widget.userUid.trim().isEmpty) {
       return const _MessageCard(
@@ -263,6 +298,12 @@ class _ModuleNotificationsTabState extends State<_ModuleNotificationsTab> {
     );
   }
 
+  // _openNotificationTarget — routes the user when a notification is tapped.
+  //   student   : push _ClaimResultPage if the notification is claim-related
+  //               and has an actionLink; otherwise navigate to Claims or Activities tab.
+  //   pusatAdab : push _ClaimReviewLoaderPage for claim notifications;
+  //               otherwise navigate to Review or Activities tab.
+  //   lecturer  : always navigates to the Activities tab.
   void _openNotificationTarget(
     BuildContext context, {
     required String actionLink,

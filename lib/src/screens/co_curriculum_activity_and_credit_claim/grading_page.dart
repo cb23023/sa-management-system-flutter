@@ -1,5 +1,20 @@
+// =============================================================================
+// SAMMS-PACK-206 | grading_page.dart
+// Class Type    : Screen
+// Responsibility: Allows lecturers to view supervised activities, search and
+//   filter grading records by status (All / Ready / Graded), open a per-activity
+//   grading detail page, and update individual student marks after attendance
+//   has been recorded and validated via GradingController.
+// Attributes   : lecturerUid (String), activityId (String),
+//                titleFallback (String), _searchController, _gradingFilter
+// Methods      : build (_GradingPage, _LecturerGradingTabState,
+//                  _LecturerActivityGradingPage), _openGradeDialog
+// =============================================================================
+
 part of 'co_curriculum_module_page.dart';
 
+// _GradingPage — thin router widget that delegates to _LecturerGradingTab,
+// passing the authenticated lecturer's UID for Firestore queries.
 class _GradingPage extends StatelessWidget {
   const _GradingPage({required this.lecturerUid});
 
@@ -11,6 +26,10 @@ class _GradingPage extends StatelessWidget {
   }
 }
 
+// _LecturerGradingTab — main grading list. Streams supervised activities by
+// supervisorLecturerId, then resolves readyCount (attendance present) and
+// gradedCount (totalMarks > 0) per activity. Supports text search and filter
+// chips (All / Ready / Graded). Tapping a card opens _LecturerActivityGradingPage.
 class _LecturerGradingTab extends StatefulWidget {
   const _LecturerGradingTab({required this.lecturerUid});
 
@@ -31,6 +50,11 @@ class _LecturerGradingTabState extends State<_LecturerGradingTab> {
   }
 
   @override
+  // build — renders the grading list card with search field, filter chips, and
+  // a StreamBuilder that fetches supervised activities. For each activity it
+  // fetches registrations and attendance via FutureBuilders, computes readyCount
+  // and gradedCount, applies the active filter, then renders _PrimaryActionCard
+  // rows. Displays a placeholder _MessageCard when loading or no results.
   Widget build(BuildContext context) {
     final query = _safeLower(_searchController.text.trim());
 
@@ -277,6 +301,12 @@ class _LecturerGradingTabState extends State<_LecturerGradingTab> {
   }
 }
 
+// _LecturerActivityGradingPage — per-activity grading detail page opened when
+// the lecturer taps a card in _LecturerGradingTab. Streams the activity document
+// for the header, streams registrations for the student list, then fetches users
+// and attendance to determine which students can be graded. Each student row
+// shows attendance status, current mark, and an Assign Mark button that calls
+// _openGradeDialog when the student's attendance is confirmed as present.
 class _LecturerActivityGradingPage extends StatelessWidget {
   const _LecturerActivityGradingPage({
     required this.activityId,
@@ -288,6 +318,11 @@ class _LecturerActivityGradingPage extends StatelessWidget {
   final String titleFallback;
   final String lecturerUid;
 
+  // _openGradeDialog — shows an AlertDialog for entering a mark (0–100).
+  //   1. Calls GradingController.validateAttendance to confirm the student is
+  //      marked present; aborts with a SnackBar if validation fails.
+  //   2. Calls GradingController.updateStudentMark to persist the mark and set
+  //      markStatus. Shows a success or error SnackBar on completion.
   Future<void> _openGradeDialog(
     BuildContext context,
     QueryDocumentSnapshot<Map<String, dynamic>> registrationDoc,

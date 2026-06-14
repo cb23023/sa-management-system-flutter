@@ -1,5 +1,26 @@
+// =============================================================================
+// SAMMS-PACK-208 | activity_controller.dart
+// Class Type    : Controller
+// Responsibility: Manages all Firestore operations for Co-Curriculum activities
+//   and student registrations. Provides collection references, CRUD operations,
+//   registration and cancellation logic with capacity tracking, and attendance-
+//   based validation. Exposes a WriteBatch factory for atomic multi-document
+//   writes used by screens in this module.
+// Attributes   : firestore (FirebaseFirestore), activities (CollectionReference),
+//                activityRegistrations (CollectionReference),
+//                attendanceRecords (CollectionReference),
+//                users (CollectionReference), creditClaims (CollectionReference)
+// Methods      : getActivities, getActivityById, validateActivityData,
+//                saveActivity, updateActivity, checkRelatedRecords,
+//                registerActivity, cancelRegistration, deleteActivity,
+//                _resolveSupervisorLecturerId, batch
+// =============================================================================
+
 part of '../../screens/co_curriculum_activity_and_credit_claim/co_curriculum_module_page.dart';
 
+// ActivityController — Firestore controller for the Co-Curriculum activity
+// and registration data. Instantiated once as _activityController and shared
+// across all screens in this library.
 class ActivityController {
   ActivityController({FirebaseFirestore? firestore})
     : firestore = firestore ?? FirebaseFirestore.instance;
@@ -21,10 +42,13 @@ class ActivityController {
   CollectionReference<Map<String, dynamic>> get creditClaims =>
       firestore.collection('credit_claims');
 
+  // getActivities — returns all documents in the activities collection.
   Future<QuerySnapshot<Map<String, dynamic>>> getActivities() {
     return activities.get();
   }
 
+  // getActivityById — fetches a single activity document by ID.
+  //   Returns the DocumentSnapshot if the document exists, or null otherwise.
   Future<DocumentSnapshot<Map<String, dynamic>>?> getActivityById(
     String activityId,
   ) async {
@@ -32,6 +56,10 @@ class ActivityController {
     return doc.exists ? doc : null;
   }
 
+  // validateActivityData — validates required fields (title, date, startTime,
+  //   endTime, venue, status, lecturer) and capacity > 0. Checks Firestore for
+  //   a duplicate title+date combination, excluding currentActivityId (used for
+  //   updates). Returns {success, message}.
   Future<Map<String, dynamic>> validateActivityData(
     Map<String, dynamic> activityData, {
     String? currentActivityId,
@@ -94,6 +122,9 @@ class ActivityController {
     return {'success': true, 'message': ''};
   }
 
+  // saveActivity — validates activityData, resolves supervisorLecturerId if
+  //   missing, stamps createdAt / updatedAt, and writes the document with merge.
+  //   Returns {success, message, activityId}.
   Future<Map<String, dynamic>> saveActivity(
     Map<String, dynamic> activityData,
   ) async {
@@ -124,6 +155,10 @@ class ActivityController {
     };
   }
 
+  // updateActivity — verifies the activity still exists, re-validates data,
+  //   confirms new capacity is not below current participantsCount, resolves
+  //   supervisorLecturerId, recomputes availableSlots, and writes the document
+  //   with merge. Returns {success, message, activityId}.
   Future<Map<String, dynamic>> updateActivity(
     String activityId,
     Map<String, dynamic> activityData,
@@ -179,6 +214,10 @@ class ActivityController {
     };
   }
 
+  // checkRelatedRecords — checks activity_registrations, attendance_records, and
+  //   credit_claims for any reference to activityId. Returns
+  //   {success, hasRelatedRecords, message}; used by deleteActivity to guard
+  //   against orphaned data.
   Future<Map<String, dynamic>> checkRelatedRecords(String activityId) async {
     final registrationsSnapshot = await activityRegistrations
         .where('activityId', isEqualTo: activityId)
@@ -222,6 +261,9 @@ class ActivityController {
     return {'success': true, 'hasRelatedRecords': false, 'message': ''};
   }
 
+  // deleteActivity — calls checkRelatedRecords first; aborts with the related-
+  //   records message if any exist. Otherwise deletes the activity document.
+  //   Returns {success, message}.
   Future<Map<String, dynamic>> deleteActivity(String activityId) async {
     final related = await checkRelatedRecords(activityId);
     if (related['hasRelatedRecords'] == true) {
@@ -232,6 +274,11 @@ class ActivityController {
     return {'success': true, 'message': 'Activity deleted successfully.'};
   }
 
+  // registerActivity — validates that the activity is Active, has available
+  //   slots, and has not passed. Checks for an existing non-cancelled registration
+  //   to prevent duplicates. Uses a WriteBatch to atomically create the registration
+  //   document and decrement availableSlots / increment participantsCount on the
+  //   activity. Returns {success, message, registrationId}.
   Future<Map<String, dynamic>> registerActivity({
     required String activityId,
     required String studentUid,
@@ -297,6 +344,11 @@ class ActivityController {
     };
   }
 
+  // cancelRegistration — allows a student to cancel before the activity date.
+  //   Blocks cancellation if attendance has already been recorded as present.
+  //   Uses a WriteBatch to set registration status to 'cancelled' and restore
+  //   availableSlots / decrement participantsCount on the activity.
+  //   Returns {success, message}.
   Future<Map<String, dynamic>> cancelRegistration({
     required String activityId,
     required String studentUid,
@@ -356,6 +408,10 @@ class ActivityController {
     return {'success': true, 'message': '$title registration cancelled.'};
   }
 
+  // _resolveSupervisorLecturerId — if supervisorLecturerId is not already set,
+  //   looks up the users collection for a lecturer whose fullName matches the
+  //   supervisorLecturerName / supervisor / lecturer field and writes the UID
+  //   back into activityData in place.
   Future<void> _resolveSupervisorLecturerId(
     Map<String, dynamic> activityData,
   ) async {
@@ -383,6 +439,7 @@ class ActivityController {
     }
   }
 
+  // batch — returns a new Firestore WriteBatch for atomic multi-document writes.
   WriteBatch batch() => firestore.batch();
 }
 

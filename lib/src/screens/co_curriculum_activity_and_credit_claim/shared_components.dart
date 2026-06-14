@@ -1,5 +1,14 @@
+// =============================================================================
+// shared_components.dart
+// Responsibility: Reusable UI widgets shared across all screens in the
+//   Co-Curriculum Activity and Credit Claim module. Each widget is private
+//   (prefixed with _) and depends only on AppColors and other shared components
+//   within this library.
+// =============================================================================
+
 part of 'co_curriculum_module_page.dart';
 
+// _SectionTitle — muted small-caps section heading used above content groups.
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.label);
 
@@ -18,6 +27,9 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+// _DashboardProfileCard — displays the user's name, role badge, and a subtitle
+// hint inside a card with a coloured icon avatar. Used at the top of every
+// role-specific dashboard.
 class _DashboardProfileCard extends StatelessWidget {
   const _DashboardProfileCard({
     required this.name,
@@ -102,6 +114,8 @@ class _DashboardProfileCard extends StatelessWidget {
   }
 }
 
+// _DashboardMetricData — plain data holder for a single dashboard metric (icon,
+// label, value, color, background). Passed as a list to _DashboardSummaryCard.
 class _DashboardMetricData {
   const _DashboardMetricData({
     required this.icon,
@@ -118,6 +132,8 @@ class _DashboardMetricData {
   final Color background;
 }
 
+// _DashboardSummaryCard — renders a titled card with a responsive 2-column grid
+// of _MetricCard widgets built from a list of _DashboardMetricData.
 class _DashboardSummaryCard extends StatelessWidget {
   const _DashboardSummaryCard({required this.title, required this.metrics});
 
@@ -176,6 +192,9 @@ class _DashboardSummaryCard extends StatelessWidget {
   }
 }
 
+// _DashboardStatusCard — shows the student's claim readiness status (ready when
+// completedCount >= 4). Displays a green "ready" banner or an amber "incomplete"
+// banner, plus a fixed info note about hours/CATS updating after attendance.
 class _DashboardStatusCard extends StatelessWidget {
   const _DashboardStatusCard({required this.ready});
 
@@ -279,6 +298,8 @@ class _DashboardStatusCard extends StatelessWidget {
   }
 }
 
+// _MetricCard — compact icon + label + value tile used inside _DashboardSummaryCard.
+// Takes a colour-scheme pair (color / background) and centres its content.
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
     required this.icon,
@@ -338,6 +359,10 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
+// _ActivityCard — full activity row card used in all three role activity tabs.
+// Shows title, meta chips, optional lecturer row, a note, and up to three action
+// buttons (primary, secondary, optional tertiary delete). Button icons are
+// derived from action label keywords via _primaryIcon / _secondaryIcon.
 class _ActivityCard extends StatelessWidget {
   const _ActivityCard({
     required this.title,
@@ -510,6 +535,8 @@ class _ActivityCard extends StatelessWidget {
   }
 }
 
+// _HistoryCard — compact read-only card for history lists (claim history, past
+// registrations). Shows title, detail text, and a right-aligned status badge.
 class _HistoryCard extends StatelessWidget {
   const _HistoryCard({
     required this.title,
@@ -574,6 +601,9 @@ class _HistoryCard extends StatelessWidget {
   }
 }
 
+// _PrimaryActionCard — card with a large icon, title, descriptive message, and
+// a single primary action chip. Used for activity grading rows in the lecturer
+// grading tab and similar single-action surfaces.
 class _PrimaryActionCard extends StatelessWidget {
   const _PrimaryActionCard({
     required this.title,
@@ -647,6 +677,11 @@ class _PrimaryActionCard extends StatelessWidget {
   }
 }
 
+// _ReviewClaimCard — full claim review card used by Pusat Adab. Displays
+// student name, matricId, status badge, summary meta chips (date, hours, CATS,
+// average mark, pass/fail), per-activity rows with attendance and marks, and
+// Approve/Reject action chips when the claim is still pending. Also shows a
+// rejection reason block when the claim has been rejected.
 class _ReviewClaimCard extends StatelessWidget {
   const _ReviewClaimCard({
     required this.studentName,
@@ -904,6 +939,9 @@ class _ReviewClaimCard extends StatelessWidget {
   }
 }
 
+// _MessageCard — coloured banner card used for loading states, empty states,
+// error notices, and informational hints. The compact flag reduces padding and
+// font size for use inside scrollable form sections.
 class _MessageCard extends StatelessWidget {
   const _MessageCard({
     required this.title,
@@ -954,6 +992,9 @@ class _MessageCard extends StatelessWidget {
   }
 }
 
+// _ActivityMetaWrap — splits a pipe-delimited meta string and renders each
+// segment as a small pill chip with a contextual icon (category, date, location,
+// schedule, premium). Used inside _ActivityCard and activity detail pages.
 class _ActivityMetaWrap extends StatelessWidget {
   const _ActivityMetaWrap({required this.meta});
 
@@ -1007,6 +1048,9 @@ class _ActivityMetaWrap extends StatelessWidget {
   }
 }
 
+// _ActionChip — full-width tappable button styled as a rounded ink chip.
+// Accepts a background/color pair, an optional icon, and an optional onTap.
+// Used for all primary and secondary action buttons throughout the module.
 class _ActionChip extends StatelessWidget {
   const _ActionChip({
     required this.label,
@@ -1067,6 +1111,8 @@ class _ActionChip extends StatelessWidget {
   }
 }
 
+// _ReviewMetaChip — small icon+text pill used in _ReviewClaimCard for summary
+// meta fields (submitted date, hours, CATS, average mark, pass/fail).
 class _ReviewMetaChip extends StatelessWidget {
   const _ReviewMetaChip({required this.icon, required this.label});
 
@@ -1097,6 +1143,8 @@ class _ReviewMetaChip extends StatelessWidget {
   }
 }
 
+// _InfoPill — small icon+text pill used for secondary metadata such as dates
+// in notification cards and detail pages.
 class _InfoPill extends StatelessWidget {
   const _InfoPill({required this.icon, required this.text});
 
@@ -1127,6 +1175,8 @@ class _InfoPill extends StatelessWidget {
   }
 }
 
+// _InlineBadge — coloured pill badge rendered inline with text. Used in
+// notification cards to show the notification type label (e.g., Claim, Info).
 class _InlineBadge extends StatelessWidget {
   const _InlineBadge({
     required this.text,
@@ -1158,6 +1208,8 @@ class _InlineBadge extends StatelessWidget {
   }
 }
 
+// _MiniMetaChip — extra-small icon+text chip with a semi-transparent white
+// background. Used for compact meta rows inside grading cards or activity rows.
 class _MiniMetaChip extends StatelessWidget {
   const _MiniMetaChip({required this.icon, required this.text});
 
@@ -1188,6 +1240,10 @@ class _MiniMetaChip extends StatelessWidget {
   }
 }
 
+// _PageShell — full-page scaffold wrapper used for sub-pages pushed onto the
+// Navigator (e.g., activity details, claim result, grading page). Provides the
+// standard gradient AppBar with the SAMS logo, title, and subtitle, and a
+// scrollable SafeArea body with 16px padding.
 class _PageShell extends StatelessWidget {
   const _PageShell({
     required this.title,
