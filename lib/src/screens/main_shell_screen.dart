@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/app_user.dart';
+import '../models/tuition_fee_and_payment/tuition_fees.dart';
 import 'attendance/attendance_screen.dart';
 import 'co_curriculum_activity_and_credit_claim/co_curriculum_module_page.dart';
 import 'open_registration_and_subject_registration/open_registration_and_subject_registration_screen.dart';
@@ -85,6 +86,35 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (user.role.trim().toLowerCase() != 'student') {
+      return _buildHome(context, academicBlocked: false);
+    }
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('tuition_fees')
+          .doc(user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final isCheckingAccess =
+            snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData;
+        final doc = snapshot.data;
+        final fee = doc != null && doc.exists ? TuitionFees.fromDoc(doc) : null;
+        return _buildHome(
+          context,
+          academicBlocked: isCheckingAccess || (fee?.isAccessBlocked ?? false),
+          blockedReason: fee?.blockedReason,
+        );
+      },
+    );
+  }
+
+  Widget _buildHome(
+    BuildContext context, {
+    required bool academicBlocked,
+    String? blockedReason,
+  }) {
     final coCurriculumRole = _coCurriculumRoleForUser(user.role);
 
     final modules = [
@@ -176,11 +206,19 @@ class _HomeTab extends StatelessWidget {
                   ),
                   itemBuilder: (context, index) {
                     final item = modules[index];
+                    final isTuitionModule = item.$1.code == 'M3';
                     return ModuleCard(
                       data: item.$1,
                       onTap: item.$2 == null
                           ? null
                           : () {
+                              if (academicBlocked && !isTuitionModule) {
+                                _showAcademicBlockedDialog(
+                                  context,
+                                  blockedReason,
+                                );
+                                return;
+                              }
                               Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => item.$2!),
                               );
@@ -193,6 +231,40 @@ class _HomeTab extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showAcademicBlockedDialog(BuildContext context, String? reason) {
+    final message = reason == null || reason.trim().isEmpty
+        ? 'Your academic access is blocked because tuition fee payment is not completed. Please settle your payment to restore access to this module.'
+        : '$reason Please settle your payment to restore access to this module.';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Academic access blocked'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.sunsetOrange,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => TuitionFeeModule(user: user)),
+              );
+            },
+            child: const Text('Go to Tuition Fee and Payment'),
+          ),
+        ],
+      ),
     );
   }
 }
