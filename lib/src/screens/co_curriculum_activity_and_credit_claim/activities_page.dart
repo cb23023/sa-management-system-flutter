@@ -1,5 +1,26 @@
+// =============================================================================
+// SAMMS-PACK-203 | activities_page.dart
+// Class Type    : Screen
+// Responsibility: Displays role-based co-curriculum activity functions.
+//   Student   — search, filter, view, register, and cancel activity registration.
+//   Pusat Adab— create, edit, delete, search, filter, and view activity details.
+//   Lecturer  — view supervised activities, filter by status/date, view details,
+//               and open grading.
+// Key Attributes: role, userUid, _searchController, _statusFilter,
+//                 _selectedDateFilter, _formKey, _venueController,
+//                 _capacityController, _descriptionController,
+//                 _selectedActivity, _selectedDate, _startTime, _endTime,
+//                 _status, _selectedLecturer, _saving, _loadingExisting
+// Key Methods   : build, _registerActivity, _cancelRegistration,
+//                 _nextActivityDocumentId, _confirmDeleteActivity,
+//                 _pickDateFilter, _matchesSelectedDate, _applyActivityDefaults,
+//                 _loadExistingActivity, _pickDate, _pickTime, _saveActivity
+// =============================================================================
+
 part of 'co_curriculum_module_page.dart';
 
+// _ActivitiesPage — role router widget. Delegates to the correct activities
+// tab based on the current CoCurriculumRole.
 class _ActivitiesPage extends StatelessWidget {
   const _ActivitiesPage({required this.role, required this.userUid});
 
@@ -19,6 +40,8 @@ class _ActivitiesPage extends StatelessWidget {
   }
 }
 
+// _StudentActivitiesTab — shows available activities with registration options,
+// and the student's own registration history. Supports search and status filter.
 class _StudentActivitiesTab extends StatefulWidget {
   const _StudentActivitiesTab({required this.studentUid});
 
@@ -38,6 +61,9 @@ class _StudentActivitiesTabState extends State<_StudentActivitiesTab> {
     super.dispose();
   }
 
+  // _registerActivity — validates registration eligibility (active status,
+  // available slots, valid future date), asks for confirmation, then calls
+  // ActivityController.registerActivity(). Shows a SnackBar with the result.
   Future<void> _registerActivity(
     BuildContext context,
     QueryDocumentSnapshot<Map<String, dynamic>> activityDoc,
@@ -107,6 +133,9 @@ class _StudentActivitiesTabState extends State<_StudentActivitiesTab> {
     );
   }
 
+  // _cancelRegistration — validates cancellation eligibility (activity date
+  // must be in the future), asks for confirmation, then calls
+  // ActivityController.cancelRegistration(). Shows a SnackBar with the result.
   Future<void> _cancelRegistration(
     BuildContext context,
     QueryDocumentSnapshot<Map<String, dynamic>> activityDoc,
@@ -576,6 +605,9 @@ class _PusatAdabActivityRecord {
   final VoidCallback onTertiaryTap;
 }
 
+// _PusatAdabActivitiesTab — lets Pusat Adab create activities and manage the
+// full activity list (edit, delete, monitor participants). Supports search and
+// status filter. Only Pusat Adab can create or modify activities.
 class _PusatAdabActivitiesTab extends StatefulWidget {
   const _PusatAdabActivitiesTab();
 
@@ -594,6 +626,9 @@ class _PusatAdabActivitiesTabState extends State<_PusatAdabActivitiesTab> {
     super.dispose();
   }
 
+  // _nextActivityDocumentId — scans existing activity document IDs matching
+  // the pattern `act-NNN`, finds the highest number, increments it by 1,
+  // and returns the next padded ID (e.g., "act-004").
   Future<String> _nextActivityDocumentId() async {
     final snapshot = await _activityController.activities.get();
     var maxNumber = 0;
@@ -611,6 +646,9 @@ class _PusatAdabActivitiesTabState extends State<_PusatAdabActivitiesTab> {
     return 'act-$next';
   }
 
+  // _confirmDeleteActivity — shows a delete confirmation dialog, then calls
+  // ActivityController.deleteActivity(). Deletion is blocked if related
+  // registration, attendance, or claim records exist.
   Future<void> _confirmDeleteActivity(
     BuildContext context,
     String documentId,
@@ -984,6 +1022,9 @@ class _PusatAdabActivitiesTabState extends State<_PusatAdabActivitiesTab> {
   }
 }
 
+// _LecturerActivitiesTab — shows activities supervised by the current lecturer.
+// Supports keyword search, status filter, and an optional date filter.
+// Each card links to activity details or the grading page.
 class _LecturerActivitiesTab extends StatefulWidget {
   const _LecturerActivitiesTab({required this.lecturerUid});
 
@@ -1004,6 +1045,8 @@ class _LecturerActivitiesTabState extends State<_LecturerActivitiesTab> {
     super.dispose();
   }
 
+  // _pickDateFilter — opens a date picker for the lecturer activity list.
+  // Stores the selected date (time stripped) and triggers a setState rebuild.
   Future<void> _pickDateFilter() async {
     final picked = await showDatePicker(
       context: context,
@@ -1018,6 +1061,8 @@ class _LecturerActivitiesTabState extends State<_LecturerActivitiesTab> {
     }
   }
 
+  // _matchesSelectedDate — returns true if the activity's stored date matches
+  // the selected date filter, or always true when no filter is applied.
   bool _matchesSelectedDate(String sessionDate, String displayDate) {
     if (_selectedDateFilter == null) {
       return true;
@@ -1345,6 +1390,8 @@ class _LecturerActivitiesTabState extends State<_LecturerActivitiesTab> {
   }
 }
 
+// _CreateActivityPage — thin wrapper that opens _ActivityFormPage in create
+// mode. Passes the nextDocumentIdLoader to generate the new activity ID.
 class _CreateActivityPage extends StatelessWidget {
   const _CreateActivityPage({required this.nextDocumentIdLoader});
 
@@ -1362,6 +1409,9 @@ class _CreateActivityPage extends StatelessWidget {
   }
 }
 
+// _ActivityFormPage — shared form used by both create and edit flows.
+// When documentId is provided it loads existing data via _loadExistingActivity.
+// Submits via _saveActivity which calls saveActivity or updateActivity.
 class _ActivityFormPage extends StatefulWidget {
   const _ActivityFormPage({
     required this.pageTitle,
@@ -1423,12 +1473,17 @@ class _ActivityFormPageState extends State<_ActivityFormPage> {
     super.dispose();
   }
 
+  // _applyActivityDefaults — pre-fills capacity, venue, and description fields
+  // with the default values from the selected _ActivityOption.
   void _applyActivityDefaults(_ActivityOption activity) {
     _capacityController.text = activity.defaultCapacity.toString();
     _venueController.text = activity.defaultVenue;
     _descriptionController.text = activity.description;
   }
 
+  // _loadExistingActivity — fetches existing activity data from Firestore using
+  // ActivityController.getActivityById, resolves the lecturer name, and updates
+  // all form field controllers and state variables for the edit flow.
   Future<void> _loadExistingActivity() async {
     final documentId = widget.documentId;
     if (documentId == null) {
@@ -1541,6 +1596,7 @@ class _ActivityFormPageState extends State<_ActivityFormPage> {
 
   int get _fixedCats => 2;
 
+  // _pickDate — opens a date picker and updates _selectedDate.
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -1555,6 +1611,8 @@ class _ActivityFormPageState extends State<_ActivityFormPage> {
     }
   }
 
+  // _pickTime — opens a time picker for start or end time and updates
+  // _startTime or _endTime accordingly.
   Future<void> _pickTime({required bool isStart}) async {
     final picked = await showTimePicker(
       context: context,
@@ -1571,6 +1629,10 @@ class _ActivityFormPageState extends State<_ActivityFormPage> {
     }
   }
 
+  // _saveActivity — validates the form, builds the activity data payload
+  // (title, category, dates, venue, hours, CATS, capacity, lecturer, status),
+  // then calls ActivityController.saveActivity (new) or updateActivity (edit).
+  // Displays the result via SnackBar and pops the page on success.
   Future<void> _saveActivity() async {
     if (_saving || !_formKey.currentState!.validate()) {
       return;
@@ -1857,6 +1919,7 @@ class _ActivityFormPageState extends State<_ActivityFormPage> {
   }
 }
 
+// _DropdownFieldCard — reusable labelled dropdown card used in activity forms.
 class _DropdownFieldCard<T> extends StatelessWidget {
   const _DropdownFieldCard({
     required this.label,
@@ -1926,6 +1989,7 @@ class _DropdownFieldCard<T> extends StatelessWidget {
   }
 }
 
+// _TextInputCard — reusable labelled text field card used in activity forms.
 class _TextInputCard extends StatelessWidget {
   const _TextInputCard({
     required this.label,
@@ -1995,6 +2059,8 @@ class _TextInputCard extends StatelessWidget {
   }
 }
 
+// _DateTimeCard — displays the selected date, start time, and end time with
+// tap callbacks for opening pickers. Used in the activity form.
 class _DateTimeCard extends StatelessWidget {
   const _DateTimeCard({
     required this.dateLabel,
@@ -2068,6 +2134,7 @@ class _DateTimeCard extends StatelessWidget {
   }
 }
 
+// _RectSearchField — styled search text field shared by all role activity tabs.
 class _RectSearchField extends StatelessWidget {
   const _RectSearchField({
     required this.controller,
@@ -2110,6 +2177,8 @@ class _RectSearchField extends StatelessWidget {
   }
 }
 
+// _FilterChipButton — tappable filter chip that highlights when selected.
+// Used for status and date filter rows across activity and grading tabs.
 class _FilterChipButton extends StatelessWidget {
   const _FilterChipButton({
     required this.label,
@@ -2151,6 +2220,7 @@ class _FilterChipButton extends StatelessWidget {
   }
 }
 
+// _CompactMetaChip — small icon+label chip used in student grading cards.
 class _CompactMetaChip extends StatelessWidget {
   const _CompactMetaChip({required this.icon, required this.label});
 
@@ -2181,6 +2251,8 @@ class _CompactMetaChip extends StatelessWidget {
   }
 }
 
+// _LecturerDropdownCard — live-streamed dropdown that lists all lecturer users
+// from Firestore. Used in the activity form to assign a supervising lecturer.
 class _LecturerDropdownCard extends StatelessWidget {
   const _LecturerDropdownCard({
     required this.selectedLecturer,
@@ -2290,6 +2362,9 @@ class _LecturerDropdownCard extends StatelessWidget {
   }
 }
 
+// _ActivityDetailsPage — read-only page showing full activity information
+// (title, category, date, venue, hours, CATS, lecturer, status, description)
+// alongside the full participant registration list. Accessible from all roles.
 class _ActivityDetailsPage extends StatelessWidget {
   const _ActivityDetailsPage({
     required this.activityId,
