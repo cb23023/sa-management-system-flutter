@@ -24,6 +24,7 @@ class NotificationController {
           .where((transaction) => _matchesTransaction(transaction, uid, matricId))
           .toList();
       final verifiedTransaction = _latestVerifiedTransaction(transactionDocs);
+      final pendingTransaction = _latestPendingTransaction(transactionDocs);
 
       final notificationSnapshot = await _firestore
           .collection('notifications')
@@ -50,6 +51,28 @@ class NotificationController {
           createdAt: verifiedTransaction.updatedAt.isNotEmpty
               ? verifiedTransaction.updatedAt
               : verifiedTransaction.createdAt,
+        ));
+      }
+      final hasPendingNotice = notifications.any(
+        (notification) =>
+            notification.title.trim().toLowerCase() ==
+            'pending treasury verification',
+      );
+      if (pendingTransaction != null &&
+          verifiedTransaction == null &&
+          !hasPendingNotice) {
+        notifications.add(TuitionNotification(
+          id: 'generated-pending-${pendingTransaction.id}',
+          userId: uid,
+          title: 'Pending Treasury verification',
+          message:
+              'Your payment of RM ${pendingTransaction.amount.toStringAsFixed(2)} has been submitted and is waiting for Treasury verification.',
+          type: 'warning',
+          module: 'tuition',
+          isRead: false,
+          createdAt: pendingTransaction.updatedAt.isNotEmpty
+              ? pendingTransaction.updatedAt
+              : pendingTransaction.createdAt,
         ));
       }
       notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -98,6 +121,8 @@ class NotificationController {
       'paymentStatus': 'Paid',
       'outstandingAmount': 0,
       'isBlocked': false,
+      'accessStatus': 'Active',
+      'blockedReason': '',
       'updatedAt': now,
     });
     batch.set(notificationRef, {
@@ -135,6 +160,8 @@ class NotificationController {
     });
     batch.update(feeRef, {
       'paymentStatus': 'Unpaid',
+      'accessStatus': 'Active',
+      'blockedReason': '',
       'updatedAt': now,
     });
     batch.set(notificationRef, {
@@ -151,21 +178,31 @@ class NotificationController {
   }
 
   Future<void> blockStudent(TuitionFees fee) async {
+    final now = DateTime.now().toIso8601String();
+    final reason = fee.blockedReason.isNotEmpty
+        ? fee.blockedReason
+        : 'Payment not completed before Week ${fee.dueWeek} deadline.';
     await _firestore.collection('tuition_fees').doc(fee.id).update({
       'isBlocked': true,
+      'accessStatus': 'Blocked',
+      'blockedReason': reason,
+      'updatedAt': now,
     });
     await sendNotification(
       userId: fee.id,
       title: 'Academic access blocked',
-      message:
-          'Your academic access has been blocked by treasury. Please settle your outstanding fee.',
+      message: 'Your academic access has been blocked by treasury. $reason',
       type: 'danger',
     );
   }
 
   Future<void> unblockStudent(TuitionFees fee) async {
+    final now = DateTime.now().toIso8601String();
     await _firestore.collection('tuition_fees').doc(fee.id).update({
       'isBlocked': false,
+      'accessStatus': 'Active',
+      'blockedReason': '',
+      'updatedAt': now,
     });
     await sendNotification(
       userId: fee.id,
@@ -212,6 +249,20 @@ class NotificationController {
           transactionSnapshot.docs.map(PaymentTransaction.fromDoc).toList();
 
       return fees.where((fee) {
+        final status = fee.paymentStatus.trim().toLowerCase();
+        final accessStatus = fee.accessStatus.trim().toLowerCase();
+        final dueDate = _parseDueDate(fee.dueDate);
+        final isPastWeekFiveDeadline =
+            dueDate != null && DateTime.now().isAfter(dueDate);
+        final requiresAccessReview =
+            isPastWeekFiveDeadline && status != 'paid' && status != 'verified';
+        final isExplicitlyBlocked =
+            fee.isBlocked || accessStatus == 'blocked';
+
+        if (isExplicitlyBlocked || status == 'unpaid') {
+          return true;
+        }
+
         final hasVerifiedPayment = transactions.any(
           (transaction) =>
               transaction.isVerified &&
@@ -222,8 +273,7 @@ class NotificationController {
         );
         if (hasVerifiedPayment) return false;
 
-        final status = fee.paymentStatus.trim().toLowerCase();
-        return status == 'unpaid' || status == 'pending';
+        return status == 'pending' || requiresAccessReview;
       }).toList();
     });
   }
@@ -257,6 +307,15 @@ class NotificationController {
     return null;
   }
 
+  PaymentTransaction? _latestPendingTransaction(
+    List<PaymentTransaction> transactions,
+  ) {
+    for (final transaction in transactions) {
+      if (transaction.isPending) return transaction;
+    }
+    return null;
+  }
+
   bool _matchesTransaction(
     PaymentTransaction transaction,
     String uid,
@@ -270,5 +329,33 @@ class NotificationController {
   bool _matchesUser(String userId, String uid, String? matricId) {
     final matric = matricId?.trim();
     return userId == uid || (matric != null && matric.isNotEmpty && userId == matric);
+  }
+
+  DateTime? _parseDueDate(String value) {
+    final parts = value.trim().split(RegExp(r'\s+'));
+    if (parts.length != 3) return null;
+
+    final day = int.tryParse(parts[0]);
+    final year = int.tryParse(parts[2]);
+    const months = {
+      'jan': 1,
+      'feb': 2,
+      'mar': 3,
+      'apr': 4,
+      'may': 5,
+      'jun': 6,
+      'jul': 7,
+      'aug': 8,
+      'sep': 9,
+      'oct': 10,
+      'nov': 11,
+      'dec': 12,
+    };
+    final monthText = parts[1].toLowerCase();
+    if (monthText.length < 3) return null;
+    final month = months[monthText.substring(0, 3)];
+    if (day == null || month == null || year == null) return null;
+
+    return DateTime(year, month, day, 23, 59, 59);
   }
 }

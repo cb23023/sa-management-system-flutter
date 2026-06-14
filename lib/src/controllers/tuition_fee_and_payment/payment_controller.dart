@@ -40,6 +40,8 @@ class PaymentController {
         paymentStatus: 'Paid',
         isBlocked: false,
         dueDate: '',
+        accessStatus: 'Active',
+        blockedReason: '',
       );
     });
   }

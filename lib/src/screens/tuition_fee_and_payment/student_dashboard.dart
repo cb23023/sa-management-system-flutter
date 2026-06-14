@@ -28,11 +28,15 @@ class StudentDashboard extends StatelessWidget {
         final data = snapshot.data;
         final outstanding = data?.outstandingAmount ?? 0.0;
         final paymentStatus = data?.paymentStatus ?? 'Unpaid';
+        final isPendingVerification =
+            paymentStatus.trim().toLowerCase() == 'pending';
         final dueDate = data?.dueDate ?? '';
+        final dueWeek = data?.dueWeek ?? 5;
+        final blockedReason = data?.blockedReason ?? '';
         final semester = data?.semester.isNotEmpty == true
             ? data!.semester
             : user!.semester;
-        final isBlocked = data?.isBlocked ?? (outstanding > 0);
+        final isBlocked = data?.isAccessBlocked ?? (outstanding > 0);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,6 +89,26 @@ class StudentDashboard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
+            if (isPendingVerification) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.infoSoft,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: AppColors.studentBlue.withValues(alpha: 0.25)),
+                ),
+                child: const Text(
+                  'Payment submitted. Pending Treasury verification. Your outstanding amount will be cleared after approval.',
+                  style: TextStyle(
+                    color: AppColors.studentBlue,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
             if (isBlocked) ...[
               Container(
                 width: double.infinity,
@@ -95,9 +119,11 @@ class StudentDashboard extends StatelessWidget {
                   border: Border.all(
                       color: AppColors.danger.withValues(alpha: 0.25)),
                 ),
-                child: const Text(
-                  'Your access has been blocked because you haven\'t paid yet. Please settle your outstanding fee.',
-                  style: TextStyle(
+                child: Text(
+                  blockedReason.isEmpty
+                      ? 'Your access has been blocked because payment was not completed before Week $dueWeek. Please settle your outstanding fee.'
+                      : blockedReason,
+                  style: const TextStyle(
                     color: AppColors.danger,
                     fontWeight: FontWeight.w700,
                   ),
@@ -116,7 +142,7 @@ class StudentDashboard extends StatelessWidget {
                       color: AppColors.warning.withValues(alpha: 0.25)),
                 ),
                 child: Text(
-                  'Payment due on $dueDate. Please settle before the deadline.',
+                  'Week $dueWeek payment deadline: $dueDate. Please settle before the deadline.',
                   style: const TextStyle(
                     color: AppColors.warning,
                     fontWeight: FontWeight.w700,

@@ -37,8 +37,10 @@ class TuitionFee extends StatelessWidget {
             ? data!.semester
             : user!.semester;
         final dueDate = data?.dueDate ?? '';
+        final dueWeek = data?.dueWeek ?? 5;
         final outstandingAmount = data?.outstandingAmount ?? totalFee;
         final paymentStatus = data?.paymentStatus.trim().toLowerCase() ?? '';
+        final isPendingVerification = paymentStatus == 'pending';
         final isPaid = outstandingAmount <= 0 ||
             paymentStatus == 'paid' ||
             paymentStatus == 'verified';
@@ -152,6 +154,25 @@ class TuitionFee extends StatelessWidget {
                   ),
                 ),
               )
+            else if (isPendingVerification)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.warningSoft,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: AppColors.warning.withValues(alpha: 0.25)),
+                ),
+                child: const Text(
+                  'Payment submitted and pending Treasury verification. Please wait for approval before making another payment.',
+                  style: TextStyle(
+                    color: AppColors.warning,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              )
             else if (dueDate.isNotEmpty)
               Container(
                 width: double.infinity,
@@ -163,7 +184,7 @@ class TuitionFee extends StatelessWidget {
                       color: AppColors.studentBlue.withValues(alpha: 0.2)),
                 ),
                 child: Text(
-                  'Payment due on $dueDate. Please pay to avoid access block.',
+                  'Week $dueWeek payment deadline: $dueDate. Please pay to avoid access block.',
                   style: const TextStyle(
                     color: AppColors.studentBlue,
                     fontWeight: FontWeight.w600,
@@ -181,13 +202,17 @@ class TuitionFee extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),
-                onPressed: isPaid
+                onPressed: isPaid || isPendingVerification
                     ? null
                     : () {
                         _showPaymentForm(context, totalFee, user);
                       },
                 child: Text(
-                  isPaid ? 'Payment Completed' : 'Pay Now',
+                  isPaid
+                      ? 'Payment Completed'
+                      : isPendingVerification
+                          ? 'Pending Treasury Verification'
+                          : 'Pay Now',
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.w700),
                 ),

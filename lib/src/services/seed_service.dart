@@ -247,7 +247,10 @@ class SeedService {
         'outstandingAmount': 1450.00,
         'paymentStatus': 'Unpaid',    // Unpaid | Pending | Paid | Verified
         'isBlocked': true,
+        'dueWeek': 5,
         'dueDate': '28 Apr 2026',
+        'accessStatus': 'Blocked',
+        'blockedReason': 'Payment not completed before Week 5 deadline.',
         'updatedAt': createdAt,
       },
       {
@@ -262,7 +265,10 @@ class SeedService {
         'outstandingAmount': 0.00,
         'paymentStatus': 'Paid',
         'isBlocked': false,
+        'dueWeek': 5,
         'dueDate': '',
+        'accessStatus': 'Active',
+        'blockedReason': '',
         'updatedAt': createdAt,
       },
       {
@@ -277,7 +283,10 @@ class SeedService {
         'outstandingAmount': 1350.00,
         'paymentStatus': 'Pending',
         'isBlocked': false,
+        'dueWeek': 5,
         'dueDate': '28 Apr 2026',
+        'accessStatus': 'Active',
+        'blockedReason': '',
         'updatedAt': createdAt,
       },
     ];

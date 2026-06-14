@@ -16,7 +16,10 @@ class TuitionFees {
     required this.outstandingAmount,
     required this.paymentStatus,
     required this.isBlocked,
+    required this.dueWeek,
     required this.dueDate,
+    required this.accessStatus,
+    required this.blockedReason,
     required this.updatedAt,
   });
 
@@ -31,11 +34,15 @@ class TuitionFees {
   final double outstandingAmount;
   final String paymentStatus;
   final bool isBlocked;
+  final int dueWeek;
   final String dueDate;
+  final String accessStatus;
+  final String blockedReason;
   final String updatedAt;
 
   double get totalFee => programFee + otherFee;
-  bool get isAccessBlocked => isBlocked;
+  bool get isAccessBlocked =>
+      isBlocked || accessStatus.trim().toLowerCase() == 'blocked';
 
   Color get statusColor {
     if (paymentStatus == 'Paid' || paymentStatus == 'Verified') {
@@ -60,7 +67,10 @@ class TuitionFees {
           (data['outstandingAmount'] as num?)?.toDouble() ?? 0.0,
       paymentStatus: (data['paymentStatus'] ?? 'Unpaid').toString(),
       isBlocked: (data['isBlocked'] as bool?) ?? false,
+      dueWeek: (data['dueWeek'] as num?)?.toInt() ?? 5,
       dueDate: (data['dueDate'] ?? '').toString(),
+      accessStatus: (data['accessStatus'] ?? '').toString(),
+      blockedReason: (data['blockedReason'] ?? '').toString(),
       updatedAt: (data['updatedAt'] ?? '').toString(),
     );
   }
@@ -69,7 +79,10 @@ class TuitionFees {
     double? outstandingAmount,
     String? paymentStatus,
     bool? isBlocked,
+    int? dueWeek,
     String? dueDate,
+    String? accessStatus,
+    String? blockedReason,
     String? updatedAt,
   }) {
     return TuitionFees(
@@ -84,7 +97,10 @@ class TuitionFees {
       outstandingAmount: outstandingAmount ?? this.outstandingAmount,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       isBlocked: isBlocked ?? this.isBlocked,
+      dueWeek: dueWeek ?? this.dueWeek,
       dueDate: dueDate ?? this.dueDate,
+      accessStatus: accessStatus ?? this.accessStatus,
+      blockedReason: blockedReason ?? this.blockedReason,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }

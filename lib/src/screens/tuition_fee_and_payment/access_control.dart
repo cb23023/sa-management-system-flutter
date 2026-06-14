@@ -322,7 +322,7 @@ class _AccessControlState
                       )
                     else
                       ...filtered.map((fee) {
-                        final isBlocked = fee.isBlocked;
+                        final isBlocked = fee.isAccessBlocked;
                         final status = fee.paymentStatus;
                         return Padding(
                           padding:
@@ -337,6 +337,13 @@ class _AccessControlState
                             amount:
                                 'RM ${fee.outstandingAmount.toStringAsFixed(2)}',
                             paymentStatus: status,
+                            dueLabel: fee.dueDate.isEmpty
+                                ? 'Week ${fee.dueWeek} deadline'
+                                : 'Week ${fee.dueWeek}: ${fee.dueDate}',
+                            accessStatus: fee.accessStatus.isEmpty
+                                ? (isBlocked ? 'Blocked' : 'Active')
+                                : fee.accessStatus,
+                            blockedReason: fee.blockedReason,
                             blocked: isBlocked,
                             actionLabel:
                                 isBlocked ? 'Unblock' : 'Block',
@@ -368,6 +375,9 @@ class _BlockListItem extends StatelessWidget {
     required this.semester,
     required this.amount,
     required this.paymentStatus,
+    required this.dueLabel,
+    required this.accessStatus,
+    required this.blockedReason,
     required this.blocked,
     this.actionLabel,
     this.actionColor,
@@ -375,6 +385,9 @@ class _BlockListItem extends StatelessWidget {
   });
 
   final String name, id, semester, amount, paymentStatus;
+  final String dueLabel;
+  final String accessStatus;
+  final String blockedReason;
   final bool blocked;
   final String? actionLabel;
   final Color? actionColor;
@@ -419,6 +432,20 @@ class _BlockListItem extends StatelessWidget {
                         color: AppColors.textMuted,
                         fontSize: 12,
                         fontWeight: FontWeight.w500)),
+                const SizedBox(height: 4),
+                Text(dueLabel,
+                    style: const TextStyle(
+                        color: AppColors.textMuted, fontSize: 12)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _AccessBadge(status: accessStatus, blocked: blocked),
+                    if (blockedReason.isNotEmpty)
+                      _ReasonBadge(reason: blockedReason),
+                  ],
+                ),
               ],
             ),
           ),
@@ -443,6 +470,57 @@ class _BlockListItem extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _AccessBadge extends StatelessWidget {
+  const _AccessBadge({required this.status, required this.blocked});
+
+  final String status;
+  final bool blocked;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = blocked ? AppColors.dangerSoft : AppColors.greenSoft;
+    final fg = blocked ? AppColors.danger : AppColors.success;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      child: Text(
+        status,
+        style: TextStyle(
+            color: fg, fontSize: 11, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+class _ReasonBadge extends StatelessWidget {
+  const _ReasonBadge({required this.reason});
+
+  final String reason;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 240),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.warningSoft,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        reason,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: AppColors.warning,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
