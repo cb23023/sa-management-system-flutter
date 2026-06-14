@@ -5,26 +5,33 @@ import 'package:printing/printing.dart';
 
 import '../../models/tuition_fee_and_payment/payment_transactions.dart';
 
+// SRS REQ-303/REQ-308 and SDD ReceiptController:
+// exposes verified payment receipts and exports receipt PDF records.
 class ReceiptController {
   ReceiptController({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
+  // A receipt is available only after Treasury verifies the payment transaction.
   Stream<PaymentTransaction?> getReceiptStream(String uid, {String? matricId}) {
     return _firestore
         .collection('payment_transactions')
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      final transactions = snapshot.docs
-          .map(PaymentTransaction.fromDoc)
-          .where((transaction) => _matchesStudent(transaction, uid, matricId))
-          .toList();
-      if (transactions.isEmpty) return null;
-      final verified = transactions.where((transaction) => transaction.isVerified);
-      return verified.isEmpty ? null : verified.first;
-    });
+          final transactions = snapshot.docs
+              .map(PaymentTransaction.fromDoc)
+              .where(
+                (transaction) => _matchesStudent(transaction, uid, matricId),
+              )
+              .toList();
+          if (transactions.isEmpty) return null;
+          final verified = transactions.where(
+            (transaction) => transaction.isVerified,
+          );
+          return verified.isEmpty ? null : verified.first;
+        });
   }
 
   Stream<List<PaymentTransaction>> getAllReceiptsStream(
@@ -35,12 +42,17 @@ class ReceiptController {
         .collection('payment_transactions')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map(PaymentTransaction.fromDoc)
-            .where((transaction) => _matchesStudent(transaction, uid, matricId))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map(PaymentTransaction.fromDoc)
+              .where(
+                (transaction) => _matchesStudent(transaction, uid, matricId),
+              )
+              .toList(),
+        );
   }
 
+  // Generates the digital receipt required by the SRS transaction record flow.
   Future<void> exportReceiptPdf(PaymentTransaction transaction) async {
     if (!transaction.isVerified) {
       throw StateError('Receipt is only available for verified payments.');
@@ -75,10 +87,7 @@ class ReceiptController {
               _pdfRow('Student name', transaction.studentName),
               _pdfRow('Matric ID', transaction.matricId),
               _pdfRow('Reference number', transaction.referenceNo),
-              _pdfRow(
-                'Amount',
-                'RM ${transaction.amount.toStringAsFixed(2)}',
-              ),
+              _pdfRow('Amount', 'RM ${transaction.amount.toStringAsFixed(2)}'),
               _pdfRow('Payment date', transaction.formattedDate),
               _pdfRow('Payment method', transaction.paymentMethod),
               _pdfRow('Payment status', transaction.status),
@@ -99,10 +108,7 @@ class ReceiptController {
       RegExp(r'[^A-Za-z0-9_-]'),
       '-',
     );
-    await Printing.sharePdf(
-      bytes: bytes,
-      filename: 'receipt-$reference.pdf',
-    );
+    await Printing.sharePdf(bytes: bytes, filename: 'receipt-$reference.pdf');
   }
 
   pw.Widget _pdfRow(String label, String value) {

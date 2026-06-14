@@ -13,6 +13,8 @@ import 'treasury_dashboard.dart';
 import 'tuition_fee.dart';
 import 'verify_payment.dart';
 
+// SDD screen wrapper for Manage Tuition Fee and Payment:
+// routes Student and Treasury actors to the tabs required by the SRS use cases.
 class TuitionFeeModule extends StatelessWidget {
   const TuitionFeeModule({super.key, this.user});
 

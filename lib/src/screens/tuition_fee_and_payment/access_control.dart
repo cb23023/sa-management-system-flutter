@@ -6,16 +6,16 @@ import '../../theme/app_colors.dart';
 import '../../controllers/tuition_fee_and_payment/notification_controller.dart';
 import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 
+// Treasury access control screen for SRS REQ-306/REQ-307:
+// blocks or restores academic module access when tuition fees are not settled.
 class AccessControl extends StatefulWidget {
   const AccessControl({super.key});
 
   @override
-  State<AccessControl> createState() =>
-      _AccessControlState();
+  State<AccessControl> createState() => _AccessControlState();
 }
 
-class _AccessControlState
-    extends State<AccessControl> {
+class _AccessControlState extends State<AccessControl> {
   final TextEditingController _searchController = TextEditingController();
   final NotificationController _notificationController =
       NotificationController();
@@ -26,6 +26,8 @@ class _AccessControlState
   @override
   void initState() {
     super.initState();
+    // Shows students who need payment follow-up, including pending, unpaid,
+    // overdue, or currently blocked records.
     _unpaidStudentsStream = _notificationController.getUnpaidStudentsStream();
   }
 
@@ -51,6 +53,7 @@ class _AccessControlState
   }
 
   Future<void> _toggleBlock(TuitionFees fee, bool currentlyBlocked) async {
+    // Updates both the tuition fee access state and the student notification.
     final studentName = fee.studentName.isEmpty ? 'Student' : fee.studentName;
     final newBlocked = !currentlyBlocked;
 
@@ -64,25 +67,28 @@ class _AccessControlState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(newBlocked
-              ? '$studentName has been blocked.'
-              : '$studentName has been unblocked.'),
-          backgroundColor:
-              newBlocked ? AppColors.danger : AppColors.success,
+          content: Text(
+            newBlocked
+                ? '$studentName has been blocked.'
+                : '$studentName has been unblocked.',
+          ),
+          backgroundColor: newBlocked ? AppColors.danger : AppColors.success,
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.danger),
+        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.danger),
       );
     }
   }
 
   void _showConfirmDialog(
-      BuildContext context, TuitionFees fee, bool isBlocked) {
+    BuildContext context,
+    TuitionFees fee,
+    bool isBlocked,
+  ) {
+    // Confirmation step prevents accidental blocking/unblocking of academic access.
     final name = fee.studentName.isEmpty ? 'Student' : fee.studentName;
     final isBlocking = !isBlocked;
 
@@ -97,9 +103,11 @@ class _AccessControlState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(isBlocking
-                ? 'Are you sure you want to block $name?'
-                : 'Are you sure you want to unblock $name?'),
+            Text(
+              isBlocking
+                  ? 'Are you sure you want to block $name?'
+                  : 'Are you sure you want to unblock $name?',
+            ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -111,14 +119,21 @@ class _AccessControlState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('$name (${fee.matricId.isEmpty ? '-' : fee.matricId})',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13)),
+                  Text(
+                    '$name (${fee.matricId.isEmpty ? '-' : fee.matricId})',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text(fee.semester.isEmpty ? '-' : fee.semester,
-                      style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 12)),
+                  Text(
+                    fee.semester.isEmpty ? '-' : fee.semester,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -131,34 +146,33 @@ class _AccessControlState
                     : AppColors.successSoft.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                    color: (isBlocking
-                            ? AppColors.danger
-                            : AppColors.success)
-                        .withValues(alpha: 0.2)),
+                  color: (isBlocking ? AppColors.danger : AppColors.success)
+                      .withValues(alpha: 0.2),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isBlocking
-                        ? 'Blocked activities'
-                        : 'Restored activities',
+                    isBlocking ? 'Blocked activities' : 'Restored activities',
                     style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                        color: isBlocking
-                            ? AppColors.danger
-                            : AppColors.success),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: isBlocking ? AppColors.danger : AppColors.success,
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  ...['Class registration', 'Exam entry',
-                          'Results & academic records',
-                          'Transcript request']
-                      .map((item) => _ActivityBullet(
-                          text: item,
-                          color: isBlocking
-                              ? AppColors.danger
-                              : AppColors.success)),
+                  ...[
+                    'Class registration',
+                    'Exam entry',
+                    'Results & academic records',
+                    'Transcript request',
+                  ].map(
+                    (item) => _ActivityBullet(
+                      text: item,
+                      color: isBlocking ? AppColors.danger : AppColors.success,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -175,8 +189,9 @@ class _AccessControlState
               Navigator.pop(ctx);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isBlocking ? AppColors.danger : AppColors.success,
+              backgroundColor: isBlocking
+                  ? AppColors.danger
+                  : AppColors.success,
               foregroundColor: Colors.white,
             ),
             child: Text(isBlocking ? 'Block' : 'Unblock'),
@@ -196,6 +211,7 @@ class _AccessControlState
         }
 
         final allDocs = snapshot.data ?? [];
+        // Local search helps Treasury find a student quickly by name or matric ID.
         final filtered = _query.isEmpty
             ? allDocs
             : allDocs.where((fee) {
@@ -212,9 +228,10 @@ class _AccessControlState
             children: [
               const _SectionHeader(title: 'Access Control'),
               const SizedBox(height: 6),
-              const Text('Students with unpaid or pending fees',
-                  style: TextStyle(
-                      color: AppColors.textMuted, fontSize: 12)),
+              const Text(
+                'Students with unpaid or pending fees',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              ),
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
@@ -223,18 +240,21 @@ class _AccessControlState
                   color: AppColors.warningSoft,
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.25)),
+                    color: AppColors.warning.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Access control active',
-                        style: TextStyle(fontWeight: FontWeight.w700)),
+                    Text(
+                      'Access control active',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     SizedBox(height: 10),
                     Text(
-                        'Students below have not settled their fees. Block or unblock academic access accordingly.',
-                        style:
-                            TextStyle(color: AppColors.textMuted)),
+                      'Students below have not settled their fees. Block or unblock academic access accordingly.',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
                   ],
                 ),
               ),
@@ -248,15 +268,17 @@ class _AccessControlState
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.search,
-                        color: AppColors.textMuted, size: 18),
+                    const Icon(
+                      Icons.search,
+                      color: AppColors.textMuted,
+                      size: 18,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextField(
                         controller: _searchController,
                         decoration: const InputDecoration(
-                          hintText:
-                              'Search student name or ID',
+                          hintText: 'Search student name or ID',
                           border: InputBorder.none,
                           isDense: true,
                         ),
@@ -300,40 +322,42 @@ class _AccessControlState
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Students with unpaid fees',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w700)),
-                        Text('${filtered.length} students',
-                            style: const TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 12)),
+                        const Text(
+                          'Students with unpaid fees',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          '${filtered.length} students',
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     if (filtered.isEmpty)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Text('No students found.',
-                            style: TextStyle(
-                                color: AppColors.textMuted)),
+                        child: Text(
+                          'No students found.',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
                       )
                     else
                       ...filtered.map((fee) {
                         final isBlocked = fee.isAccessBlocked;
                         final status = fee.paymentStatus;
                         return Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.only(bottom: 10),
                           child: _BlockListItem(
                             name: fee.studentName.isEmpty
                                 ? '-'
                                 : fee.studentName,
                             id: fee.matricId.isEmpty ? '-' : fee.matricId,
-                            semester:
-                                fee.semester.isEmpty ? '-' : fee.semester,
+                            semester: fee.semester.isEmpty ? '-' : fee.semester,
                             amount:
                                 'RM ${fee.outstandingAmount.toStringAsFixed(2)}',
                             paymentStatus: status,
@@ -345,13 +369,12 @@ class _AccessControlState
                                 : fee.accessStatus,
                             blockedReason: fee.blockedReason,
                             blocked: isBlocked,
-                            actionLabel:
-                                isBlocked ? 'Unblock' : 'Block',
+                            actionLabel: isBlocked ? 'Unblock' : 'Block',
                             actionColor: isBlocked
                                 ? AppColors.success
                                 : AppColors.danger,
-                            onActionTap: () => _showConfirmDialog(
-                                context, fee, isBlocked),
+                            onActionTap: () =>
+                                _showConfirmDialog(context, fee, isBlocked),
                           ),
                         );
                       }),
@@ -408,34 +431,53 @@ class _BlockListItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 14)),
+                Text(
+                  name,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Text(id,
-                        style: const TextStyle(
-                            color: AppColors.textMuted, fontSize: 12)),
+                    Text(
+                      id,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     _StatusBadge(status: paymentStatus),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(semester,
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 12)),
-                Text(amount,
-                    style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500)),
+                Text(
+                  semester,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  amount,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(dueLabel,
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 12)),
+                Text(
+                  dueLabel,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
@@ -452,21 +494,27 @@ class _BlockListItem extends StatelessWidget {
           const SizedBox(width: 12),
           if (onActionTap != null && actionLabel != null)
             ConstrainedBox(
-              constraints: const BoxConstraints(
-                  minWidth: 80, maxWidth: 110),
+              constraints: const BoxConstraints(minWidth: 80, maxWidth: 110),
               child: ElevatedButton(
                 onPressed: onActionTap,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: actionColor ?? AppColors.danger,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                child: Text(actionLabel!,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 12)),
+                child: Text(
+                  actionLabel!,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ),
         ],
@@ -487,12 +535,13 @@ class _AccessBadge extends StatelessWidget {
     final fg = blocked ? AppColors.danger : AppColors.success;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
       child: Text(
         status,
-        style: TextStyle(
-            color: fg, fontSize: 11, fontWeight: FontWeight.w600),
+        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -550,10 +599,13 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-          color: bg, borderRadius: BorderRadius.circular(6)),
-      child: Text(status,
-          style: TextStyle(
-              color: fg, fontSize: 11, fontWeight: FontWeight.w600)),
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
@@ -572,9 +624,11 @@ class _ActivityBullet extends StatelessWidget {
           Icon(Icons.circle, size: 6, color: color),
           const SizedBox(width: 8),
           Expanded(
-              child: Text(text,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.textDark))),
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 12, color: AppColors.textDark),
+            ),
+          ),
         ],
       ),
     );
@@ -595,7 +649,6 @@ class _LoadingPlaceholder extends StatelessWidget {
   }
 }
 
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title});
   final String title;
@@ -604,7 +657,11 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textDark),
+      style: const TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textDark,
+      ),
     );
   }
 }

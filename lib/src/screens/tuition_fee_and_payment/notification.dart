@@ -5,6 +5,8 @@ import '../../theme/app_colors.dart';
 import '../../controllers/tuition_fee_and_payment/notification_controller.dart';
 import '../../models/tuition_fee_and_payment/notification.dart';
 
+// Student notice screen for SRS REQ-304:
+// displays payment reminders, verification results, and access block notices.
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key, this.user});
 
@@ -16,6 +18,8 @@ class NotificationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     if (user == null) return const _LoadingPlaceholder();
 
+    // Notices are filtered to the current student and tuition module so other
+    // module notifications do not mix with payment-related updates.
     return StreamBuilder<List<TuitionNotification>>(
       stream: _notificationController.getNotificationStream(
         user!.uid,
@@ -30,7 +34,8 @@ class NotificationScreen extends StatelessWidget {
         if (notifications.isEmpty) {
           return const _EmptyState(
             icon: Icons.notifications_none,
-            message: 'No notices yet.\nYou\'ll be notified when there are payment updates.',
+            message:
+                'No notices yet.\nYou\'ll be notified when there are payment updates.',
           );
         }
 
@@ -47,7 +52,6 @@ class NotificationScreen extends StatelessWidget {
       },
     );
   }
-
 }
 
 // ─── Payment form sheet ───────────────────────────────────────────────────────
@@ -82,27 +86,35 @@ class _NotificationItem extends StatelessWidget {
             width: 10,
             height: 10,
             margin: const EdgeInsets.only(top: 4),
-            decoration:
-                BoxDecoration(color: bulletColor, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: bulletColor,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style:
-                        const TextStyle(fontWeight: FontWeight.w700)),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 4),
-                Text(message,
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.textMuted)),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textMuted,
+                  ),
+                ),
               ],
             ),
           ),
-          Text(time,
-              style: const TextStyle(
-                  color: AppColors.textMuted, fontSize: 11)),
+          Text(
+            time,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+          ),
         ],
       ),
     );

@@ -5,6 +5,8 @@ import '../../controllers/tuition_fee_and_payment/notification_controller.dart';
 import '../../models/tuition_fee_and_payment/payment_transactions.dart';
 import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 
+// Treasury dashboard for SRS REQ-305 to REQ-307:
+// gives Treasury a centralized overview of paid, unpaid, pending, and blocked students.
 class TreasuryDashboard extends StatelessWidget {
   const TreasuryDashboard({super.key});
 
@@ -27,6 +29,7 @@ class TreasuryDashboard extends StatelessWidget {
             final fees = feeSnap.data ?? [];
             final underReview = txnSnap.data ?? [];
 
+            // Metrics summarize fee status for monitoring and access control.
             int paid = 0, unpaid = 0, pending = 0, blocked = 0;
             for (final fee in fees) {
               final status = fee.paymentStatus;
@@ -45,6 +48,8 @@ class TreasuryDashboard extends StatelessWidget {
 
             pending = underReview.length;
 
+            // Pending count follows transaction records because it represents
+            // payments waiting for Treasury verification.
             final metrics = [
               _MetricCardData(
                 label: 'Paid',
@@ -82,19 +87,20 @@ class TreasuryDashboard extends StatelessWidget {
                     constraints: const BoxConstraints(maxWidth: 520),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        final crossAxisCount =
-                            constraints.maxWidth >= 420 ? 2 : 1;
+                        final crossAxisCount = constraints.maxWidth >= 420
+                            ? 2
+                            : 1;
                         return GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: metrics.length,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            crossAxisSpacing: 14,
-                            mainAxisSpacing: 14,
-                            mainAxisExtent: 118,
-                          ),
+                                crossAxisCount: crossAxisCount,
+                                crossAxisSpacing: 14,
+                                mainAxisSpacing: 14,
+                                mainAxisExtent: 118,
+                              ),
                           itemBuilder: (context, index) {
                             final metric = metrics[index];
                             return _MetricCard(data: metric);
@@ -105,19 +111,24 @@ class TreasuryDashboard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-                const Text('Students under review',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700)),
+                const Text(
+                  'Students under review',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 12),
                 if (underReview.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Text('No students pending review.',
-                        style: TextStyle(color: AppColors.textMuted)),
+                    child: Text(
+                      'No students pending review.',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
                   )
                 else
                   ...underReview.take(5).map((txn) {
-                    final name = txn.studentName.isEmpty ? '-' : txn.studentName;
+                    final name = txn.studentName.isEmpty
+                        ? '-'
+                        : txn.studentName;
                     final id = txn.matricId.isEmpty ? '-' : txn.matricId;
                     final status = txn.status;
                     return _StudentStatusCard(
@@ -128,8 +139,8 @@ class TreasuryDashboard extends StatelessWidget {
                       statusColor: status == 'Verified'
                           ? AppColors.success
                           : status == 'Pending'
-                              ? AppColors.warning
-                              : AppColors.danger,
+                          ? AppColors.warning
+                          : AppColors.danger,
                     );
                   }),
               ],
@@ -149,11 +160,14 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(title,
-        style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textDark));
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textDark,
+      ),
+    );
   }
 }
 
@@ -228,7 +242,6 @@ class _LoadingPlaceholder extends StatelessWidget {
   }
 }
 
-
 class _StudentStatusCard extends StatelessWidget {
   const _StudentStatusCard({
     required this.name,
@@ -260,7 +273,10 @@ class _StudentStatusCard extends StatelessWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: AppColors.studentBlue,
-            child: Text(name.isNotEmpty ? name[0] : '?', style: const TextStyle(color: Colors.white)),
+            child: Text(
+              name.isNotEmpty ? name[0] : '?',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -269,8 +285,20 @@ class _StudentStatusCard extends StatelessWidget {
               children: [
                 Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
-                Text(id, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                Text(subtitle, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                Text(
+                  id,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
@@ -280,7 +308,14 @@ class _StudentStatusCard extends StatelessWidget {
               color: statusColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(status, style: TextStyle(color: statusColor, fontWeight: FontWeight.w700, fontSize: 12)),
+            child: Text(
+              status,
+              style: TextStyle(
+                color: statusColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
           ),
         ],
       ),

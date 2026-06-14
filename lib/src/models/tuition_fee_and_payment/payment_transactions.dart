@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 
+// SDD PaymentTransaction model:
+// represents submitted payments, Treasury verification status, and receipt data.
 class PaymentTransaction {
   const PaymentTransaction({
     required this.id,
@@ -37,6 +39,7 @@ class PaymentTransaction {
   final String bank;
   final String accountOrCard;
   final String bankRef;
+  // Status follows the SRS Treasury workflow: Pending, Verified, or Rejected.
   final String status;
   final String verifiedBy;
   final String remarks;

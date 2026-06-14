@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../models/app_user.dart';
 import '../../theme/app_colors.dart';
 import '../../controllers/tuition_fee_and_payment/payment_controller.dart';
+
+// Payment form bottom sheet for SRS REQ-302:
+// collects payment method details and submits a Pending transaction to Treasury.
 class PaymentFormSheet extends StatefulWidget {
   const PaymentFormSheet({super.key, required this.amount, this.user});
 
@@ -35,6 +38,8 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
   }
 
   String? _validatePayment() {
+    // Validation prevents incomplete or invalid account/card details from being
+    // stored as payment evidence.
     return _paymentController.validatePaymentForm(
       _paymentMethod,
       _selectedBank,
@@ -43,6 +48,8 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
   }
 
   Future<void> _submitPayment() async {
+    // A successful submit does not mark the fee as paid yet; it creates a
+    // Pending record that must be verified by Treasury.
     final validationError = _validatePayment();
     if (validationError != null) {
       setState(() => _errorMessage = validationError);
@@ -104,8 +111,7 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
               children: [
                 const Text(
                   'Process Payment',
-                  style:
-                      TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
@@ -125,13 +131,18 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Outstanding amount',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.textMuted)),
+                  const Text(
+                    'Outstanding amount',
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
                   const SizedBox(height: 4),
-                  Text('RM ${widget.amount.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w800)),
+                  Text(
+                    'RM ${widget.amount.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -141,14 +152,17 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Payment method',
-                    style: TextStyle(
-                        fontSize: 12, color: AppColors.textMuted)),
+                const Text(
+                  'Payment method',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
                 const SizedBox(height: 6),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 12),
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.grayOne,
                     borderRadius: BorderRadius.circular(12),
@@ -159,8 +173,7 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
                     isExpanded: true,
                     underline: const SizedBox(),
                     items: ['Online Transfer', 'Credit Card']
-                        .map((e) =>
-                            DropdownMenuItem(value: e, child: Text(e)))
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
                     onChanged: (value) =>
                         setState(() => _paymentMethod = value),
@@ -173,14 +186,17 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Bank',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.textMuted)),
+                  const Text(
+                    'Bank',
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
                   const SizedBox(height: 6),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 12),
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.grayOne,
                       borderRadius: BorderRadius.circular(12),
@@ -192,8 +208,9 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
                       underline: const SizedBox(),
                       hint: const Text('Select bank'),
                       items: PaymentController.validBanks
-                          .map((e) =>
-                              DropdownMenuItem(value: e, child: Text(e)))
+                          .map(
+                            (e) => DropdownMenuItem(value: e, child: Text(e)),
+                          )
                           .toList(),
                       onChanged: (value) =>
                           setState(() => _selectedBank = value),
@@ -207,11 +224,14 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    _paymentMethod == 'Online Transfer'
-                        ? 'Account number'
-                        : 'Card number',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textMuted)),
+                  _paymentMethod == 'Online Transfer'
+                      ? 'Account number'
+                      : 'Card number',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _accountNumberController,
@@ -224,12 +244,13 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
                     filled: true,
                     fillColor: AppColors.grayOne,
                     border: OutlineInputBorder(
-                      borderSide:
-                          const BorderSide(color: AppColors.border),
+                      borderSide: const BorderSide(color: AppColors.border),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 12),
+                      vertical: 12,
+                      horizontal: 12,
+                    ),
                   ),
                 ),
               ],
@@ -239,18 +260,22 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.dangerSoft,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppColors.danger.withValues(alpha: 0.25)),
+                    color: AppColors.danger.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Text(
                   _errorMessage,
                   style: const TextStyle(
-                      color: AppColors.danger,
-                      fontWeight: FontWeight.w600),
+                    color: AppColors.danger,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -263,7 +288,8 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 onPressed: _isSubmitting ? null : _submitPayment,
                 child: _isSubmitting
@@ -271,11 +297,17 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
-                    : const Text('Submit Payment',
+                    : const Text(
+                        'Submit Payment',
                         style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w700)),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -286,8 +318,6 @@ class _PaymentFormSheetState extends State<PaymentFormSheet> {
 }
 
 // ─── Shared widgets ───────────────────────────────────────────────────────────
-
-
 
 class _InputField extends StatelessWidget {
   const _InputField({required this.label, required this.value});
@@ -300,7 +330,10 @@ class _InputField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
         const SizedBox(height: 6),
         Container(
           width: double.infinity,
@@ -310,7 +343,10 @@ class _InputField extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border),
           ),
-          child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
         ),
       ],
     );

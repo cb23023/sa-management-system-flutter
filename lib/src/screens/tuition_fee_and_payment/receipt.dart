@@ -5,6 +5,8 @@ import '../../theme/app_colors.dart';
 import '../../controllers/tuition_fee_and_payment/receipt_controller.dart';
 import '../../models/tuition_fee_and_payment/payment_transactions.dart';
 
+// Student receipt screen for SRS REQ-303/REQ-308:
+// shows the latest verified payment and allows PDF receipt export.
 class Receipt extends StatefulWidget {
   const Receipt({super.key, this.user});
 
@@ -18,6 +20,7 @@ class _ReceiptState extends State<Receipt> {
   final ReceiptController _receiptController = ReceiptController();
   bool _isDownloading = false;
 
+  // Exports the verified transaction as a digital receipt for student records.
   Future<void> _downloadReceipt(PaymentTransaction transaction) async {
     setState(() => _isDownloading = true);
     try {
@@ -47,6 +50,7 @@ class _ReceiptState extends State<Receipt> {
     final user = widget.user;
     if (user == null) return const _LoadingPlaceholder();
 
+    // Receipt is intentionally hidden until Treasury verifies the payment.
     return StreamBuilder<PaymentTransaction?>(
       stream: _receiptController.getReceiptStream(
         user.uid,
@@ -61,7 +65,8 @@ class _ReceiptState extends State<Receipt> {
         if (transaction == null) {
           return const _EmptyState(
             icon: Icons.receipt_long_outlined,
-            message: 'No payment receipts found.\nComplete a payment to see your receipt here.',
+            message:
+                'No payment receipts found.\nComplete a payment to see your receipt here.',
           );
         }
 
@@ -70,10 +75,12 @@ class _ReceiptState extends State<Receipt> {
         final createdAt = transaction.createdAt;
         final method = transaction.paymentMethod;
         final bankRef = transaction.bankRef;
-        final verifiedBy =
-            transaction.verifiedBy.isEmpty ? 'Pending' : transaction.verifiedBy;
-        final semester =
-            transaction.semester.isEmpty ? user.semester : transaction.semester;
+        final verifiedBy = transaction.verifiedBy.isEmpty
+            ? 'Pending'
+            : transaction.verifiedBy;
+        final semester = transaction.semester.isEmpty
+            ? user.semester
+            : transaction.semester;
 
         final isSuccess = transaction.isVerified;
 
@@ -87,8 +94,9 @@ class _ReceiptState extends State<Receipt> {
                 color: isSuccess ? AppColors.greenSoft : AppColors.warningSoft,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                    color: (isSuccess ? AppColors.success : AppColors.warning)
-                        .withValues(alpha: 0.4)),
+                  color: (isSuccess ? AppColors.success : AppColors.warning)
+                      .withValues(alpha: 0.4),
+                ),
               ),
               child: Column(
                 children: [
@@ -101,23 +109,27 @@ class _ReceiptState extends State<Receipt> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    isSuccess ? 'Payment Verified' : 'Payment Pending Verification',
+                    isSuccess
+                        ? 'Payment Verified'
+                        : 'Payment Pending Verification',
                     style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: isSuccess
-                            ? AppColors.success
-                            : AppColors.warning),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: isSuccess ? AppColors.success : AppColors.warning,
+                    ),
                   ),
                   const SizedBox(height: 6),
-                  Text(createdAt,
-                      style: const TextStyle(color: AppColors.textMuted)),
+                  Text(
+                    createdAt,
+                    style: const TextStyle(color: AppColors.textMuted),
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'Reference no. $reference',
                     style: const TextStyle(
-                        color: AppColors.studentBlue,
-                        fontWeight: FontWeight.w700),
+                      color: AppColors.studentBlue,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
@@ -127,8 +139,9 @@ class _ReceiptState extends State<Receipt> {
             _ReceiptRow(label: 'Name', value: user.fullName),
             _ReceiptRow(label: 'Semester', value: semester),
             _ReceiptRow(
-                label: 'Amount paid',
-                value: 'RM ${amount.toStringAsFixed(2)}'),
+              label: 'Amount paid',
+              value: 'RM ${amount.toStringAsFixed(2)}',
+            ),
             _ReceiptRow(label: 'Payment method', value: method),
             _ReceiptRow(label: 'Bank ref', value: bankRef),
             _ReceiptRow(label: 'Verified by', value: verifiedBy),
@@ -140,10 +153,12 @@ class _ReceiptState extends State<Receipt> {
                   backgroundColor: AppColors.studentBlue,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                onPressed:
-                    _isDownloading ? null : () => _downloadReceipt(transaction),
+                onPressed: _isDownloading
+                    ? null
+                    : () => _downloadReceipt(transaction),
                 icon: _isDownloading
                     ? const SizedBox(
                         width: 18,
@@ -184,10 +199,8 @@ class _ReceiptRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: const TextStyle(color: AppColors.textMuted)),
-          Text(value,
-              style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(label, style: const TextStyle(color: AppColors.textMuted)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],
       ),
     );

@@ -7,6 +7,8 @@ import '../../controllers/tuition_fee_and_payment/notification_controller.dart';
 import '../../controllers/tuition_fee_and_payment/receipt_controller.dart';
 import '../../models/tuition_fee_and_payment/payment_transactions.dart';
 
+// Treasury transaction record screen for SRS REQ-308:
+// lists all payment transactions and exports verified records as receipts.
 class TransactionScreen extends StatefulWidget {
   const TransactionScreen({super.key});
 
@@ -26,6 +28,8 @@ class _TransactionScreenState extends State<TransactionScreen> {
   @override
   void initState() {
     super.initState();
+    // Treasury sees the full payment audit trail across Pending, Verified,
+    // and Rejected transactions.
     _transactionsStream = _notificationController.getAllTransactionsStream();
   }
 
@@ -51,6 +55,8 @@ class _TransactionScreenState extends State<TransactionScreen> {
   }
 
   void _showTransactionDialog(PaymentTransaction transaction) {
+    // The detail dialog separates normal transaction records from receipt
+    // export, which is only available after verification.
     showDialog(
       context: context,
       builder: (ctx) => _TransactionRecordDialog(txnDoc: transaction),
@@ -69,6 +75,8 @@ class _TransactionScreenState extends State<TransactionScreen> {
         }
 
         final allDocs = snapshot.data ?? [];
+        // Search and status filters help Treasury locate transaction evidence
+        // quickly during payment review or receipt lookup.
         final filtered = allDocs.where((transaction) {
           final name = transaction.studentName.toLowerCase();
           final id = transaction.matricId.toLowerCase();
@@ -117,13 +125,17 @@ class _TransactionScreenState extends State<TransactionScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: AppColors.treasuryTeal, width: 2),
+                  borderSide: const BorderSide(
+                    color: AppColors.treasuryTeal,
+                    width: 2,
+                  ),
                 ),
                 filled: true,
                 fillColor: AppColors.cardBackground,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -152,7 +164,10 @@ class _TransactionScreenState extends State<TransactionScreen> {
                 ).animate(animation);
                 return FadeTransition(
                   opacity: animation,
-                  child: SlideTransition(position: offsetAnimation, child: child),
+                  child: SlideTransition(
+                    position: offsetAnimation,
+                    child: child,
+                  ),
                 );
               },
               child: filtered.isEmpty
@@ -175,8 +190,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                           name: transaction.studentName.isEmpty
                               ? '-'
                               : transaction.studentName,
-                          amount:
-                              'RM ${transaction.amount.toStringAsFixed(2)}',
+                          amount: 'RM ${transaction.amount.toStringAsFixed(2)}',
                           reference: transaction.referenceNo,
                           method: transaction.paymentMethod,
                           status: transaction.status,
@@ -307,14 +321,17 @@ class _TransactionRecordDialogState extends State<_TransactionRecordDialog> {
     final statusColor = txnDoc.statusColor;
     final isReceipt = txnDoc.isVerified;
     final isRejected = txnDoc.isRejected;
-    final recordTitle = isReceipt ? '$name - Receipt' : '$name - Payment Record';
+    final recordTitle = isReceipt
+        ? '$name - Receipt'
+        : '$name - Payment Record';
     final helperText = isReceipt
         ? 'Receipt details for the selected payment.'
         : isRejected
-            ? 'This payment was rejected by treasury.'
-            : 'This payment is still waiting for treasury verification.';
-    final cardColor =
-        isReceipt ? AppColors.greenSoft : statusColor.withValues(alpha: 0.08);
+        ? 'This payment was rejected by treasury.'
+        : 'This payment is still waiting for treasury verification.';
+    final cardColor = isReceipt
+        ? AppColors.greenSoft
+        : statusColor.withValues(alpha: 0.08);
 
     return AlertDialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -339,7 +356,10 @@ class _TransactionRecordDialogState extends State<_TransactionRecordDialog> {
               const SizedBox(height: 6),
               Text(
                 helperText,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 18),
               Container(
@@ -574,29 +594,32 @@ class _TransactionItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '$name - $amount',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              _StatusPill(status: status, color: statusColor),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            reference,
-            style: const TextStyle(
-              color: AppColors.studentBlue,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            method,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-          ),
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '$name - $amount',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        _StatusPill(status: status, color: statusColor),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      reference,
+                      style: const TextStyle(
+                        color: AppColors.studentBlue,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      method,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),

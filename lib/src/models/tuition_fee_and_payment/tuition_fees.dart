@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 
+// SDD TuitionFees model:
+// stores programme fee, other fee, outstanding amount, due week, and access state.
 class TuitionFees {
   const TuitionFees({
     required this.id,
@@ -34,13 +36,17 @@ class TuitionFees {
   final double outstandingAmount;
   final String paymentStatus;
   final bool isBlocked;
+  // Week 5 deadline fields support the SRS access restriction rule.
   final int dueWeek;
   final String dueDate;
+  // accessStatus and blockedReason explain whether other academic modules are blocked.
   final String accessStatus;
   final String blockedReason;
   final String updatedAt;
 
   double get totalFee => programFee + otherFee;
+
+  // SRS access restriction check used by all modules except tuition payment.
   bool get isAccessBlocked =>
       isBlocked || accessStatus.trim().toLowerCase() == 'blocked';
 
@@ -63,8 +69,7 @@ class TuitionFees {
       programme: (data['programme'] ?? '').toString(),
       programFee: (data['programFee'] as num?)?.toDouble() ?? 0.0,
       otherFee: (data['otherFee'] as num?)?.toDouble() ?? 0.0,
-      outstandingAmount:
-          (data['outstandingAmount'] as num?)?.toDouble() ?? 0.0,
+      outstandingAmount: (data['outstandingAmount'] as num?)?.toDouble() ?? 0.0,
       paymentStatus: (data['paymentStatus'] ?? 'Unpaid').toString(),
       isBlocked: (data['isBlocked'] as bool?) ?? false,
       dueWeek: (data['dueWeek'] as num?)?.toInt() ?? 5,

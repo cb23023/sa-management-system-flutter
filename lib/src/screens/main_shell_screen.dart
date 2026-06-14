@@ -90,6 +90,8 @@ class _HomeTab extends StatelessWidget {
       return _buildHome(context, academicBlocked: false);
     }
 
+    // SRS academic restriction: blocked students can still open the tuition
+    // payment module, but other academic modules are guarded from entry.
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('tuition_fees')
@@ -98,7 +100,7 @@ class _HomeTab extends StatelessWidget {
       builder: (context, snapshot) {
         final isCheckingAccess =
             snapshot.connectionState == ConnectionState.waiting &&
-                !snapshot.hasData;
+            !snapshot.hasData;
         final doc = snapshot.data;
         final fee = doc != null && doc.exists ? TuitionFees.fromDoc(doc) : null;
         return _buildHome(
@@ -334,8 +336,8 @@ class _NoticesTab extends StatelessWidget {
                     onTap: destination == null
                         ? null
                         : () => Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => destination),
-                            ),
+                            MaterialPageRoute(builder: (_) => destination),
+                          ),
                   ),
                 );
               }),
@@ -512,79 +514,79 @@ class _NoticeCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.cardShadow,
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
-            alignment: Alignment.center,
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: background,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    tag,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: color,
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: background,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      tag,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textDark,
+                  const SizedBox(height: 10),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  message,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textMuted,
-                    height: 1.55,
+                  const SizedBox(height: 6),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textMuted,
+                      height: 1.55,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 }
@@ -602,7 +604,11 @@ String _formatRole(String role) {
     case 'treasury':
       return 'Treasury';
     default:
-      return role.replaceAll('_', ' ').split(' ').map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}').join(' ');
+      return role
+          .replaceAll('_', ' ')
+          .split(' ')
+          .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
+          .join(' ');
   }
 }
 
@@ -742,7 +748,11 @@ class _ProfileDetailCard extends StatelessWidget {
             height: 58,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [AppColors.darkSurface, AppColors.studentBlue, AppColors.treasuryTeal],
+                colors: [
+                  AppColors.darkSurface,
+                  AppColors.studentBlue,
+                  AppColors.treasuryTeal,
+                ],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),

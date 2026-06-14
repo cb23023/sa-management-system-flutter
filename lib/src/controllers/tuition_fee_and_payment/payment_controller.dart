@@ -3,9 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/app_user.dart';
 import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 
+// SRS REQ-301/REQ-302 and SDD PaymentController:
+// handles tuition fee retrieval, payment form validation, and payment submission.
 class PaymentController {
   PaymentController({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -20,19 +22,22 @@ class PaymentController {
     'UOB Malaysia',
   ];
 
+  // Supports the student use case to view fee details, outstanding amount,
+  // payment status, and academic access status from Firestore.
   Stream<TuitionFees?> getTuitionFeeStream(String uid, {String? matricId}) {
-    return _firestore
-        .collection('tuition_fees')
-        .doc(uid)
-        .snapshots()
-        .asyncMap((doc) async {
+    return _firestore.collection('tuition_fees').doc(uid).snapshots().asyncMap((
+      doc,
+    ) async {
       final fee = doc.exists
           ? TuitionFees.fromDoc(doc)
           : await _findTuitionFee(uid, matricId: matricId);
       if (fee == null) return null;
 
-      final verifiedTransaction =
-          await _findLatestTransaction(uid, matricId: matricId, verifiedOnly: true);
+      final verifiedTransaction = await _findLatestTransaction(
+        uid,
+        matricId: matricId,
+        verifiedOnly: true,
+      );
       if (verifiedTransaction == null) return fee;
 
       return fee.copyWith(
@@ -46,6 +51,7 @@ class PaymentController {
     });
   }
 
+  // Validates the SRS payment form fields before creating a transaction record.
   String? validatePaymentForm(String? method, String? bank, String account) {
     final accountText = account.trim();
     if (accountText.isEmpty) {
@@ -67,6 +73,8 @@ class PaymentController {
     return 'TXN-${now.year}-${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.millisecondsSinceEpoch % 10000}';
   }
 
+  // Implements the submit payment flow by creating a pending transaction
+  // for Treasury verification.
   Future<void> submitPayment({
     required AppUser? user,
     required double amount,
@@ -93,10 +101,9 @@ class PaymentController {
     });
 
     if (user != null) {
-      await _firestore
-          .collection('tuition_fees')
-          .doc(user.uid)
-          .update({'paymentStatus': 'Pending'});
+      await _firestore.collection('tuition_fees').doc(user.uid).update({
+        'paymentStatus': 'Pending',
+      });
     }
   }
 
@@ -131,7 +138,8 @@ class PaymentController {
       final transactionUid = (data['studentId'] ?? '').toString();
       final transactionMatric = (data['matricId'] ?? '').toString();
       final status = (data['status'] ?? '').toString().trim().toLowerCase();
-      final sameStudent = transactionUid == uid ||
+      final sameStudent =
+          transactionUid == uid ||
           (matric != null && matric.isNotEmpty && transactionMatric == matric);
       if (!sameStudent) continue;
       if (verifiedOnly && status != 'verified') continue;

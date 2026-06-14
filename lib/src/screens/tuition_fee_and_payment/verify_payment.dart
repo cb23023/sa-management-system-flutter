@@ -6,6 +6,8 @@ import '../../theme/app_colors.dart';
 import '../../controllers/tuition_fee_and_payment/notification_controller.dart';
 import '../../models/tuition_fee_and_payment/payment_transactions.dart';
 
+// Treasury verification screen for SRS REQ-305:
+// reviews pending payment transactions and records verify/reject decisions.
 class VerifyPayment extends StatefulWidget {
   const VerifyPayment({super.key});
 
@@ -26,8 +28,10 @@ class _VerifyPaymentState extends State<VerifyPayment> {
   @override
   void initState() {
     super.initState();
-    _pendingTransactionsStream =
-        _notificationController.getPendingTransactionsStream();
+    // Only Pending records appear here; verified and rejected records move to
+    // the transaction history after processing.
+    _pendingTransactionsStream = _notificationController
+        .getPendingTransactionsStream();
   }
 
   @override
@@ -53,7 +57,11 @@ class _VerifyPaymentState extends State<VerifyPayment> {
   }
 
   Future<void> _processVerification(
-      PaymentTransaction transaction, String action) async {
+    PaymentTransaction transaction,
+    String action,
+  ) async {
+    // SDD algorithm branch: verify clears fees and restores access, while
+    // reject keeps the student unpaid and sends remarks back to the student.
     setState(() => _isProcessing = true);
     try {
       if (action == 'verify') {
@@ -71,11 +79,14 @@ class _VerifyPaymentState extends State<VerifyPayment> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(action == 'verify'
-              ? 'Payment verified successfully.'
-              : 'Payment rejected with remarks.'),
-          backgroundColor:
-              action == 'verify' ? AppColors.success : AppColors.danger,
+          content: Text(
+            action == 'verify'
+                ? 'Payment verified successfully.'
+                : 'Payment rejected with remarks.',
+          ),
+          backgroundColor: action == 'verify'
+              ? AppColors.success
+              : AppColors.danger,
         ),
       );
       setState(() {
@@ -84,9 +95,7 @@ class _VerifyPaymentState extends State<VerifyPayment> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.danger),
+        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.danger),
       );
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -94,6 +103,7 @@ class _VerifyPaymentState extends State<VerifyPayment> {
   }
 
   void _showVerifyDialog(PaymentTransaction transaction) {
+    // Dialog shows the submitted evidence before Treasury confirms the status.
     _remarksController.clear();
     showDialog(
       context: context,
@@ -131,13 +141,15 @@ class _VerifyPaymentState extends State<VerifyPayment> {
         final filtered = query.isEmpty
             ? allDocs
             : allDocs.where((transaction) {
-                final searchableText = _normalizeSearchText([
-                  transaction.studentName,
-                  transaction.matricId,
-                  transaction.studentId,
-                  transaction.referenceNo,
-                  transaction.paymentMethod,
-                ].join(' '));
+                final searchableText = _normalizeSearchText(
+                  [
+                    transaction.studentName,
+                    transaction.matricId,
+                    transaction.studentId,
+                    transaction.referenceNo,
+                    transaction.paymentMethod,
+                  ].join(' '),
+                );
                 return queryWords.every(searchableText.contains);
               }).toList();
 
@@ -155,15 +167,17 @@ class _VerifyPaymentState extends State<VerifyPayment> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.search,
-                      color: AppColors.textMuted, size: 18),
+                  const Icon(
+                    Icons.search,
+                    color: AppColors.textMuted,
+                    size: 18,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
                       decoration: const InputDecoration(
-                        hintText:
-                            'Search student name or matric ID',
+                        hintText: 'Search student name or matric ID',
                         border: InputBorder.none,
                         isDense: true,
                       ),
@@ -191,7 +205,7 @@ class _VerifyPaymentState extends State<VerifyPayment> {
                         ),
                       );
                     },
-                    ),
+                  ),
                 ],
               ),
             ),
@@ -209,12 +223,17 @@ class _VerifyPaymentState extends State<VerifyPayment> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Pending payments',
-                          style:
-                              TextStyle(fontWeight: FontWeight.w700)),
-                      Text('${filtered.length} records',
-                          style: const TextStyle(
-                              color: AppColors.textMuted, fontSize: 12)),
+                      const Text(
+                        'Pending payments',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        '${filtered.length} records',
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -223,8 +242,7 @@ class _VerifyPaymentState extends State<VerifyPayment> {
                       padding: EdgeInsets.symmetric(vertical: 24),
                       child: Text(
                         'No pending payments found.',
-                        style:
-                            TextStyle(color: AppColors.textMuted),
+                        style: TextStyle(color: AppColors.textMuted),
                       ),
                     )
                   else
@@ -238,8 +256,7 @@ class _VerifyPaymentState extends State<VerifyPayment> {
                           matricId: transaction.matricId.isEmpty
                               ? '-'
                               : transaction.matricId,
-                          amount:
-                              'RM ${transaction.amount.toStringAsFixed(2)}',
+                          amount: 'RM ${transaction.amount.toStringAsFixed(2)}',
                           method: transaction.paymentMethod,
                           date: _formatDate(transaction.createdAt),
                           onTap: () => _showVerifyDialog(transaction),
@@ -275,8 +292,19 @@ class _VerifyPaymentState extends State<VerifyPayment> {
 
   String _monthName(int m) {
     const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return months[m];
   }
@@ -302,8 +330,9 @@ class _VerifyDetailDialog extends StatelessWidget {
     final amount = 'RM ${txnDoc.amount.toStringAsFixed(2)}';
     final method = txnDoc.paymentMethod;
     final bank = txnDoc.bank.isEmpty ? '-' : txnDoc.bank;
-    final accountOrCard =
-        txnDoc.accountOrCard.isEmpty ? '-' : txnDoc.accountOrCard;
+    final accountOrCard = txnDoc.accountOrCard.isEmpty
+        ? '-'
+        : txnDoc.accountOrCard;
     final date = txnDoc.createdAt.isEmpty ? '-' : txnDoc.createdAt;
 
     return AlertDialog(
@@ -315,128 +344,152 @@ class _VerifyDetailDialog extends StatelessWidget {
         child: SizedBox(
           width: 390,
           child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Verify Payment',
-            style: TextStyle(
-              color: AppColors.textDark,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${txnDoc.studentName.isEmpty ? 'Student' : txnDoc.studentName} - ${txnDoc.matricId.isEmpty ? '-' : txnDoc.matricId}',
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-          ),
-          const SizedBox(height: 18),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 18),
-            decoration: BoxDecoration(
-              color: AppColors.tealSoft,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Outstanding amount',
-                    style: TextStyle(
-                        color: AppColors.textMuted, fontSize: 13)),
-                const SizedBox(height: 8),
-                Text(amount,
-                    style: const TextStyle(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Verify Payment',
+                style: TextStyle(
+                  color: AppColors.textDark,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${txnDoc.studentName.isEmpty ? 'Student' : txnDoc.studentName} - ${txnDoc.matricId.isEmpty ? '-' : txnDoc.matricId}',
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 18,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.tealSoft,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Outstanding amount',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      amount,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textDark)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          _DetailRow(label: 'Payment date', value: date),
-          _DetailRow(label: 'Payment method', value: method),
-          if (method == 'Online Transfer') ...[
-            _DetailRow(label: 'Bank', value: bank),
-            _DetailRow(label: 'Account number', value: accountOrCard),
-          ] else
-            _DetailRow(label: 'Card number', value: accountOrCard),
-          const SizedBox(height: 14),
-          const Text('Remarks',
-              style: TextStyle(
-                  color: AppColors.textMuted, fontSize: 12)),
-          const SizedBox(height: 8),
-          TextField(
-            controller: remarksController,
-            maxLines: 3,
-            decoration: InputDecoration(
-              hintText:
-                  'Add remarks for reason to verify or reject',
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: AppColors.border)),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: AppColors.border)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                      color: AppColors.treasuryTeal, width: 2)),
-              filled: true,
-              fillColor: AppColors.grayOne,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 14),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: isProcessing ? null : onReject,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.danger,
-                    side: const BorderSide(color: AppColors.danger),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: isProcessing
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.danger))
-                      : const Text('Reject'),
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: isProcessing ? null : onVerify,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.treasuryTeal,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 18),
+              _DetailRow(label: 'Payment date', value: date),
+              _DetailRow(label: 'Payment method', value: method),
+              if (method == 'Online Transfer') ...[
+                _DetailRow(label: 'Bank', value: bank),
+                _DetailRow(label: 'Account number', value: accountOrCard),
+              ] else
+                _DetailRow(label: 'Card number', value: accountOrCard),
+              const SizedBox(height: 14),
+              const Text(
+                'Remarks',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: remarksController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Add remarks for reason to verify or reject',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
-                  child: isProcessing
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Text('Verified'),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AppColors.treasuryTeal,
+                      width: 2,
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.grayOne,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: isProcessing ? null : onReject,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.danger,
+                        side: const BorderSide(color: AppColors.danger),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: isProcessing
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.danger,
+                              ),
+                            )
+                          : const Text('Reject'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: isProcessing ? null : onVerify,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.treasuryTeal,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: isProcessing
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Verified'),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
           ),
         ),
       ),
@@ -469,20 +522,22 @@ class _DetailRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  color: AppColors.textMuted, fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
           const SizedBox(height: 6),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: AppColors.grayOne,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Text(value,
-                style: const TextStyle(fontWeight: FontWeight.w700)),
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -498,11 +553,14 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(title,
-        style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textDark));
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textDark,
+      ),
+    );
   }
 }
 
@@ -535,57 +593,73 @@ class _PendingPaymentItem extends StatelessWidget {
           highlightColor: AppColors.treasuryTeal.withValues(alpha: 0.06),
           hoverColor: AppColors.treasuryTeal.withValues(alpha: 0.04),
           child: Ink(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: borderRadius,
-          border: Border.all(
-              color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700)),
-                ),
-                Text(amount,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.warning)),
-              ],
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: borderRadius,
+              border: Border.all(color: AppColors.border),
             ),
-            const SizedBox(height: 6),
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(matricId,
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 12)),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.warningSoft,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text('Pending',
-                      style: TextStyle(
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    Text(
+                      amount,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      matricId,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.warningSoft,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'Pending',
+                        style: TextStyle(
                           color: AppColors.warning,
                           fontSize: 11,
-                          fontWeight: FontWeight.w600)),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$method • $date',
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text('$method • $date',
-                style: const TextStyle(
-                    color: AppColors.textMuted, fontSize: 12)),
-          ],
-        ),
           ),
         ),
       ),

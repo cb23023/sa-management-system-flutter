@@ -234,9 +234,11 @@ class SeedService {
     ].map((user) => {'id': user['email'], ...user}).toList();
 
     // ── tuition_fees (one doc per student, keyed by uid) ─────────────────────
+    // M3/SRS seed: tuition_fees stores one fee record per student.
+    // Demo states cover unpaid-blocked, paid-active, and pending verification.
     final tuitionFees = [
       {
-        'id': 'stu-001',              // doc ID = student uid
+        'id': 'stu-001', // doc ID = student uid
         'studentId': 'stu-001',
         'studentName': 'Ahmad Malik',
         'matricId': '2023012345',
@@ -245,7 +247,7 @@ class SeedService {
         'programFee': 1200.00,
         'otherFee': 250.00,
         'outstandingAmount': 1450.00,
-        'paymentStatus': 'Unpaid',    // Unpaid | Pending | Paid | Verified
+        'paymentStatus': 'Unpaid', // Unpaid | Pending | Paid | Verified
         'isBlocked': true,
         'dueWeek': 5,
         'dueDate': '28 Apr 2026',
@@ -292,6 +294,8 @@ class SeedService {
     ];
 
     // ── payment_transactions ─────────────────────────────────────────────────
+    // M3/SRS seed: payment_transactions stores submitted payment evidence.
+    // Verified records generate receipts; Pending records wait for Treasury.
     final paymentTransactions = [
       {
         'id': 'txn-001',
@@ -305,7 +309,7 @@ class SeedService {
         'bank': 'Maybank',
         'accountOrCard': '123-456-7890',
         'bankRef': 'IB-20260401-XX',
-        'status': 'Verified',          // Pending | Verified | Rejected
+        'status': 'Verified', // Pending | Verified | Rejected
         'verifiedBy': 'treasury',
         'remarks': '',
         'module': 'tuition',
@@ -334,6 +338,8 @@ class SeedService {
     ];
 
     // ── notifications ────────────────────────────────────────────────────────
+    // M3/SRS seed: tuition notifications include reminders, verification
+    // results, and academic access changes for the student Notices tab.
     final notifications = [
       {
         'id': 'notif-stu-001',
@@ -351,8 +357,7 @@ class SeedService {
         'id': 'notif-stu-002',
         'userId': 'stu-001',
         'title': 'Futsal Performance claim pending review',
-        'message':
-            'Your latest claim is pending review by Pusat Adab.',
+        'message': 'Your latest claim is pending review by Pusat Adab.',
         'type': 'info',
         'module': 'module2',
         'isRead': false,
@@ -411,8 +416,7 @@ class SeedService {
         'id': 'notif-stu-004',
         'userId': 'stu-002',
         'title': 'Payment verified',
-        'message':
-            'Your payment of RM 1,400.00 has been verified by treasury.',
+        'message': 'Your payment of RM 1,400.00 has been verified by treasury.',
         'type': 'success',
         'module': 'tuition',
         'isRead': false,
@@ -911,7 +915,8 @@ class SeedService {
         'submittedAt': createdAt,
         'reviewedBy': '',
         'reviewedAt': '',
-        'remarks': 'Pending Pusat Adab review for the completed four-activity co-curriculum claim set with all marks recorded.',
+        'remarks':
+            'Pending Pusat Adab review for the completed four-activity co-curriculum claim set with all marks recorded.',
       },
     ];
 
@@ -1061,9 +1066,3 @@ class SeedService {
     };
   }
 }
-
-
-
-
-
-

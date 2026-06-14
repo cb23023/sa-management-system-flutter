@@ -6,6 +6,8 @@ import '../../controllers/tuition_fee_and_payment/payment_controller.dart';
 import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 import 'payment_form.dart';
 
+// Fee detail screen for SRS REQ-301/REQ-302:
+// displays programme fee breakdown and opens the payment submission form.
 class TuitionFee extends StatelessWidget {
   const TuitionFee({super.key, this.user});
 
@@ -16,6 +18,8 @@ class TuitionFee extends StatelessWidget {
   Widget build(BuildContext context) {
     if (user == null) return const _LoadingPlaceholder();
 
+    // Reads the latest tuition fee document so paid, pending, and blocked
+    // states are reflected without manually refreshing the module.
     return StreamBuilder<TuitionFees?>(
       stream: _paymentController.getTuitionFeeStream(
         user!.uid,
@@ -41,10 +45,13 @@ class TuitionFee extends StatelessWidget {
         final outstandingAmount = data?.outstandingAmount ?? totalFee;
         final paymentStatus = data?.paymentStatus.trim().toLowerCase() ?? '';
         final isPendingVerification = paymentStatus == 'pending';
-        final isPaid = outstandingAmount <= 0 ||
+        final isPaid =
+            outstandingAmount <= 0 ||
             paymentStatus == 'paid' ||
             paymentStatus == 'verified';
 
+        // Payment button is disabled when the fee is already paid or when a
+        // submitted payment is still waiting for Treasury verification.
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -58,9 +65,10 @@ class TuitionFee extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Your Programme',
-                      style:
-                          TextStyle(color: Colors.white70, fontSize: 12)),
+                  const Text(
+                    'Your Programme',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     programme,
@@ -77,30 +85,40 @@ class TuitionFee extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Semester',
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 11)),
+                          const Text(
+                            'Semester',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                            ),
+                          ),
                           const SizedBox(height: 3),
                           Text(
                             semester,
                             style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700),
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          const Text('ID',
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 11)),
+                          const Text(
+                            'ID',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                            ),
+                          ),
                           const SizedBox(height: 3),
                           Text(
                             user!.identifier,
                             style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700),
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
@@ -110,28 +128,35 @@ class TuitionFee extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Fee Breakdown',
-                style:
-                    TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+            const Text(
+              'Fee Breakdown',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 10),
             _FeeBreakdownItem(
-                label: programme,
-                amount: 'RM ${programFee.toStringAsFixed(2)}'),
+              label: programme,
+              amount: 'RM ${programFee.toStringAsFixed(2)}',
+            ),
             _FeeBreakdownItem(
-                label: 'Other Fees',
-                amount: 'RM ${otherFee.toStringAsFixed(2)}'),
+              label: 'Other Fees',
+              amount: 'RM ${otherFee.toStringAsFixed(2)}',
+            ),
             const Divider(height: 22, thickness: 1.2),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Total Tuition Fee',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w800)),
-                Text('RM ${totalFee.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.studentBlue)),
+                const Text(
+                  'Total Tuition Fee',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  'RM ${totalFee.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.studentBlue,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -143,7 +168,8 @@ class TuitionFee extends StatelessWidget {
                   color: AppColors.greenSoft,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: AppColors.success.withValues(alpha: 0.25)),
+                    color: AppColors.success.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: const Text(
                   'Your tuition fee has been fully paid. Please refer to the Receipt tab for payment record.',
@@ -162,7 +188,8 @@ class TuitionFee extends StatelessWidget {
                   color: AppColors.warningSoft,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.25)),
+                    color: AppColors.warning.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: const Text(
                   'Payment submitted and pending Treasury verification. Please wait for approval before making another payment.',
@@ -181,7 +208,8 @@ class TuitionFee extends StatelessWidget {
                   color: AppColors.infoSoft,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: AppColors.studentBlue.withValues(alpha: 0.2)),
+                    color: AppColors.studentBlue.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Text(
                   'Week $dueWeek payment deadline: $dueDate. Please pay to avoid access block.',
@@ -200,7 +228,8 @@ class TuitionFee extends StatelessWidget {
                   backgroundColor: AppColors.studentBlue,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 onPressed: isPaid || isPendingVerification
                     ? null
@@ -211,10 +240,12 @@ class TuitionFee extends StatelessWidget {
                   isPaid
                       ? 'Payment Completed'
                       : isPendingVerification
-                          ? 'Pending Treasury Verification'
-                          : 'Pay Now',
+                      ? 'Pending Treasury Verification'
+                      : 'Pay Now',
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w700),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
@@ -224,13 +255,13 @@ class TuitionFee extends StatelessWidget {
     );
   }
 
-  void _showPaymentForm(
-      BuildContext context, double amount, AppUser? user) {
+  void _showPaymentForm(BuildContext context, double amount, AppUser? user) {
+    // Bottom sheet matches the SDD payment form flow while keeping the student
+    // inside the tuition module.
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) =>
-          PaymentFormSheet(amount: amount, user: user),
+      builder: (context) => PaymentFormSheet(amount: amount, user: user),
     );
   }
 }
@@ -251,14 +282,19 @@ class _FeeBreakdownItem extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
-              child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textDark))),
-          Text(amount,
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark)),
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: AppColors.textDark),
+            ),
+          ),
+          Text(
+            amount,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
         ],
       ),
     );
@@ -278,4 +314,3 @@ class _LoadingPlaceholder extends StatelessWidget {
     );
   }
 }
-

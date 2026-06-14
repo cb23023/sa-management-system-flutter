@@ -5,6 +5,8 @@ import '../../theme/app_colors.dart';
 import '../../controllers/tuition_fee_and_payment/payment_controller.dart';
 import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 
+// Student dashboard for SRS REQ-301/REQ-304:
+// summarizes outstanding amount, deadline, pending verification, and blocked access.
 class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key, this.user});
 
@@ -15,6 +17,8 @@ class StudentDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (user == null) return const _LoadingPlaceholder();
 
+    // Live Firestore stream keeps payment and access status updated after
+    // Student payment submission or Treasury verification.
     return StreamBuilder<TuitionFees?>(
       stream: _paymentController.getTuitionFeeStream(
         user!.uid,
@@ -38,6 +42,8 @@ class StudentDashboard extends StatelessWidget {
             : user!.semester;
         final isBlocked = data?.isAccessBlocked ?? (outstanding > 0);
 
+        // Each banner maps to an SRS state: pending verification, academic
+        // restriction, and Week 5 payment reminder.
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -77,14 +83,22 @@ class StudentDashboard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('ID: ${user!.identifier}',
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 13)),
-                      Text(user!.role.toUpperCase(),
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 13)),
+                      Text(
+                        'ID: ${user!.identifier}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        user!.role.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
@@ -97,7 +111,8 @@ class StudentDashboard extends StatelessWidget {
                   color: AppColors.infoSoft,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                      color: AppColors.studentBlue.withValues(alpha: 0.25)),
+                    color: AppColors.studentBlue.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: const Text(
                   'Payment submitted. Pending Treasury verification. Your outstanding amount will be cleared after approval.',
@@ -117,7 +132,8 @@ class StudentDashboard extends StatelessWidget {
                   color: AppColors.dangerSoft,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                      color: AppColors.danger.withValues(alpha: 0.25)),
+                    color: AppColors.danger.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Text(
                   blockedReason.isEmpty
@@ -139,7 +155,8 @@ class StudentDashboard extends StatelessWidget {
                   color: AppColors.warningSoft,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.25)),
+                    color: AppColors.warning.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Text(
                   'Week $dueWeek payment deadline: $dueDate. Please settle before the deadline.',
@@ -162,15 +179,21 @@ class StudentDashboard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Payment status',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  const Text(
+                    'Payment status',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Outstanding amount',
-                          style: TextStyle(
-                              fontSize: 12, color: AppColors.textMuted)),
+                      const Text(
+                        'Outstanding amount',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
                       _StatusPill(status: paymentStatus),
                     ],
                   ),
@@ -178,11 +201,12 @@ class StudentDashboard extends StatelessWidget {
                   Text(
                     'RM ${outstanding.toStringAsFixed(2)}',
                     style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: outstanding > 0
-                            ? AppColors.danger
-                            : AppColors.success),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: outstanding > 0
+                          ? AppColors.danger
+                          : AppColors.success,
+                    ),
                   ),
                 ],
               ),
@@ -195,7 +219,6 @@ class StudentDashboard extends StatelessWidget {
 }
 
 // ─── Fee Detail tab ───────────────────────────────────────────────────────────
-
 
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.status});
@@ -222,8 +245,14 @@ class _StatusPill extends StatelessWidget {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(status, style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700),
+      ),
     );
   }
 }

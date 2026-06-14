@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 
+// SDD TuitionNotification model:
+// stores reminders, verification results, and academic access notices.
 class TuitionNotification {
   const TuitionNotification({
     required this.id,

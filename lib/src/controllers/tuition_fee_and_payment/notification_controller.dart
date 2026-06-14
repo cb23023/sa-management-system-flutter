@@ -4,9 +4,11 @@ import '../../models/tuition_fee_and_payment/notification.dart';
 import '../../models/tuition_fee_and_payment/payment_transactions.dart';
 import '../../models/tuition_fee_and_payment/tuition_fees.dart';
 
+// SRS REQ-304 to REQ-307 and SDD NotificationController:
+// manages payment notices, Treasury verification, and academic access control.
 class NotificationController {
   NotificationController({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -14,70 +16,84 @@ class NotificationController {
     String uid, {
     String? matricId,
   }) {
+    // Combines saved Firestore notices with generated payment state notices so
+    // students can see pending/verified payment updates required by the SRS.
     return _firestore
         .collection('payment_transactions')
         .orderBy('createdAt', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
-      final transactionDocs = snapshot.docs
-          .map(PaymentTransaction.fromDoc)
-          .where((transaction) => _matchesTransaction(transaction, uid, matricId))
-          .toList();
-      final verifiedTransaction = _latestVerifiedTransaction(transactionDocs);
-      final pendingTransaction = _latestPendingTransaction(transactionDocs);
+          final transactionDocs = snapshot.docs
+              .map(PaymentTransaction.fromDoc)
+              .where(
+                (transaction) =>
+                    _matchesTransaction(transaction, uid, matricId),
+              )
+              .toList();
+          final verifiedTransaction = _latestVerifiedTransaction(
+            transactionDocs,
+          );
+          final pendingTransaction = _latestPendingTransaction(transactionDocs);
 
-      final notificationSnapshot = await _firestore
-          .collection('notifications')
-          .where('module', isEqualTo: 'tuition')
-          .get();
-      final notifications = notificationSnapshot.docs
-          .map(TuitionNotification.fromDoc)
-          .where((notification) => _matchesUser(notification.userId, uid, matricId))
-          .toList();
-      final hasVerifiedNotice = notifications.any(
-        (notification) =>
-            notification.title.trim().toLowerCase() == 'payment verified',
-      );
-      if (verifiedTransaction != null && !hasVerifiedNotice) {
-        notifications.add(TuitionNotification(
-          id: 'generated-${verifiedTransaction.id}',
-          userId: uid,
-          title: 'Payment verified',
-          message:
-              'Your payment of RM ${verifiedTransaction.amount.toStringAsFixed(2)} has been verified by treasury.',
-          type: 'success',
-          module: 'tuition',
-          isRead: false,
-          createdAt: verifiedTransaction.updatedAt.isNotEmpty
-              ? verifiedTransaction.updatedAt
-              : verifiedTransaction.createdAt,
-        ));
-      }
-      final hasPendingNotice = notifications.any(
-        (notification) =>
-            notification.title.trim().toLowerCase() ==
-            'pending treasury verification',
-      );
-      if (pendingTransaction != null &&
-          verifiedTransaction == null &&
-          !hasPendingNotice) {
-        notifications.add(TuitionNotification(
-          id: 'generated-pending-${pendingTransaction.id}',
-          userId: uid,
-          title: 'Pending Treasury verification',
-          message:
-              'Your payment of RM ${pendingTransaction.amount.toStringAsFixed(2)} has been submitted and is waiting for Treasury verification.',
-          type: 'warning',
-          module: 'tuition',
-          isRead: false,
-          createdAt: pendingTransaction.updatedAt.isNotEmpty
-              ? pendingTransaction.updatedAt
-              : pendingTransaction.createdAt,
-        ));
-      }
-      notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return notifications;
-    });
+          final notificationSnapshot = await _firestore
+              .collection('notifications')
+              .where('module', isEqualTo: 'tuition')
+              .get();
+          final notifications = notificationSnapshot.docs
+              .map(TuitionNotification.fromDoc)
+              .where(
+                (notification) =>
+                    _matchesUser(notification.userId, uid, matricId),
+              )
+              .toList();
+          final hasVerifiedNotice = notifications.any(
+            (notification) =>
+                notification.title.trim().toLowerCase() == 'payment verified',
+          );
+          if (verifiedTransaction != null && !hasVerifiedNotice) {
+            notifications.add(
+              TuitionNotification(
+                id: 'generated-${verifiedTransaction.id}',
+                userId: uid,
+                title: 'Payment verified',
+                message:
+                    'Your payment of RM ${verifiedTransaction.amount.toStringAsFixed(2)} has been verified by treasury.',
+                type: 'success',
+                module: 'tuition',
+                isRead: false,
+                createdAt: verifiedTransaction.updatedAt.isNotEmpty
+                    ? verifiedTransaction.updatedAt
+                    : verifiedTransaction.createdAt,
+              ),
+            );
+          }
+          final hasPendingNotice = notifications.any(
+            (notification) =>
+                notification.title.trim().toLowerCase() ==
+                'pending treasury verification',
+          );
+          if (pendingTransaction != null &&
+              verifiedTransaction == null &&
+              !hasPendingNotice) {
+            notifications.add(
+              TuitionNotification(
+                id: 'generated-pending-${pendingTransaction.id}',
+                userId: uid,
+                title: 'Pending Treasury verification',
+                message:
+                    'Your payment of RM ${pendingTransaction.amount.toStringAsFixed(2)} has been submitted and is waiting for Treasury verification.',
+                type: 'warning',
+                module: 'tuition',
+                isRead: false,
+                createdAt: pendingTransaction.updatedAt.isNotEmpty
+                    ? pendingTransaction.updatedAt
+                    : pendingTransaction.createdAt,
+              ),
+            );
+          }
+          notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return notifications;
+        });
   }
 
   Future<void> sendNotification({
@@ -102,6 +118,8 @@ class NotificationController {
     String remarks, {
     String treasuryId = 'treasury',
   }) async {
+    // Treasury verification updates the transaction, clears outstanding fees,
+    // restores academic access, and creates the digital payment notification.
     final feeRef = await _findTuitionFeeReference(transaction);
     if (feeRef == null) {
       throw StateError('Student tuition fee record not found.');
@@ -143,6 +161,8 @@ class NotificationController {
     String remarks, {
     String treasuryId = 'treasury',
   }) async {
+    // Rejected payments return the fee record to unpaid status and notify the
+    // student to resubmit valid payment details.
     final feeRef = await _findTuitionFeeReference(transaction);
     if (feeRef == null) {
       throw StateError('Student tuition fee record not found.');
@@ -178,6 +198,7 @@ class NotificationController {
   }
 
   Future<void> blockStudent(TuitionFees fee) async {
+    // Implements the Week 5 academic access restriction described in SRS/SDD.
     final now = DateTime.now().toIso8601String();
     final reason = fee.blockedReason.isNotEmpty
         ? fee.blockedReason
@@ -197,6 +218,7 @@ class NotificationController {
   }
 
   Future<void> unblockStudent(TuitionFees fee) async {
+    // Restores access after payment settlement or Treasury approval.
     final now = DateTime.now().toIso8601String();
     await _firestore.collection('tuition_fees').doc(fee.id).update({
       'isBlocked': false,
@@ -214,9 +236,10 @@ class NotificationController {
   }
 
   Stream<List<TuitionFees>> getAllTuitionFeesStream() {
-    return _firestore.collection('tuition_fees').snapshots().map(
-          (snapshot) => snapshot.docs.map(TuitionFees.fromDoc).toList(),
-        );
+    return _firestore
+        .collection('tuition_fees')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(TuitionFees.fromDoc).toList());
   }
 
   Stream<List<PaymentTransaction>> getAllTransactionsStream() {
@@ -224,8 +247,9 @@ class NotificationController {
         .collection('payment_transactions')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map(PaymentTransaction.fromDoc).toList());
+        .map(
+          (snapshot) => snapshot.docs.map(PaymentTransaction.fromDoc).toList(),
+        );
   }
 
   Stream<List<PaymentTransaction>> getPendingTransactionsStream() {
@@ -236,17 +260,19 @@ class NotificationController {
   }
 
   Stream<List<TuitionFees>> getUnpaidStudentsStream() {
-    return _firestore
-        .collection('tuition_fees')
-        .snapshots()
-        .asyncMap((snapshot) async {
+    // Feeds the Treasury Access Control page with unpaid, pending, or blocked
+    // students who require payment follow-up before academic access is allowed.
+    return _firestore.collection('tuition_fees').snapshots().asyncMap((
+      snapshot,
+    ) async {
       final fees = snapshot.docs.map(TuitionFees.fromDoc).toList();
       final transactionSnapshot = await _firestore
           .collection('payment_transactions')
           .orderBy('createdAt', descending: true)
           .get();
-      final transactions =
-          transactionSnapshot.docs.map(PaymentTransaction.fromDoc).toList();
+      final transactions = transactionSnapshot.docs
+          .map(PaymentTransaction.fromDoc)
+          .toList();
 
       return fees.where((fee) {
         final status = fee.paymentStatus.trim().toLowerCase();
@@ -256,8 +282,7 @@ class NotificationController {
             dueDate != null && DateTime.now().isAfter(dueDate);
         final requiresAccessReview =
             isPastWeekFiveDeadline && status != 'paid' && status != 'verified';
-        final isExplicitlyBlocked =
-            fee.isBlocked || accessStatus == 'blocked';
+        final isExplicitlyBlocked = fee.isBlocked || accessStatus == 'blocked';
 
         if (isExplicitlyBlocked || status == 'unpaid') {
           return true;
@@ -281,9 +306,12 @@ class NotificationController {
   Future<DocumentReference<Map<String, dynamic>>?> _findTuitionFeeReference(
     PaymentTransaction transaction,
   ) async {
+    // Matches a transaction back to the student's fee document by uid first,
+    // then matric ID as a fallback for imported or seeded records.
     if (transaction.studentId.isNotEmpty) {
-      final byStudentId =
-          _firestore.collection('tuition_fees').doc(transaction.studentId);
+      final byStudentId = _firestore
+          .collection('tuition_fees')
+          .doc(transaction.studentId);
       final doc = await byStudentId.get();
       if (doc.exists) return byStudentId;
     }
@@ -301,6 +329,8 @@ class NotificationController {
   PaymentTransaction? _latestVerifiedTransaction(
     List<PaymentTransaction> transactions,
   ) {
+    // The newest verified transaction is used to show successful payment status
+    // and generated receipt notices.
     for (final transaction in transactions) {
       if (transaction.isVerified) return transaction;
     }
@@ -310,6 +340,8 @@ class NotificationController {
   PaymentTransaction? _latestPendingTransaction(
     List<PaymentTransaction> transactions,
   ) {
+    // The newest pending transaction is used to show "waiting for Treasury"
+    // feedback after the student submits payment.
     for (final transaction in transactions) {
       if (transaction.isPending) return transaction;
     }
@@ -328,10 +360,13 @@ class NotificationController {
 
   bool _matchesUser(String userId, String uid, String? matricId) {
     final matric = matricId?.trim();
-    return userId == uid || (matric != null && matric.isNotEmpty && userId == matric);
+    return userId == uid ||
+        (matric != null && matric.isNotEmpty && userId == matric);
   }
 
   DateTime? _parseDueDate(String value) {
+    // Parses seed/prototype due date text such as "28 Apr 2026" for Week 5
+    // access review logic.
     final parts = value.trim().split(RegExp(r'\s+'));
     if (parts.length != 3) return null;
 
